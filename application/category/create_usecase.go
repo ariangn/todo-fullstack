@@ -7,7 +7,7 @@ import (
 
     "github.com/ariangn/todo-go/domain/entity"
     "github.com/ariangn/todo-go/domain/repository"
-    "github.com/ariangn/todo-go/domain/value-object"
+    "github.com/ariangn/todo-go/domain/valueobject"
 )
 
 type CreateUseCase interface {
@@ -24,13 +24,13 @@ func NewCreateUseCase(categoryRepo repository.CategoryRepository) CreateUseCase 
 
 func (uc *createUseCase) Execute(ctx context.Context, userID, name, color string, description *string) (*entity.Category, error) {
     // Validate NameVO
-    nameVO, err := value-object.NewTitleVO(name) // reuse TitleVO for non-empty check
+    nameVO, err := valueobject.NewTitleVO(name) // reuse TitleVO for non-empty check
     if err != nil {
         return nil, err
     }
     // Color is pre-validated by front-end
 
-    userIDVO, err := value-object.NewUserIDVO(userID)
+    userIDVO, err := valueobject.NewUserIDVO(userID)
     if err != nil {
         return nil, err
     }

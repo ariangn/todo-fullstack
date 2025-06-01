@@ -7,7 +7,7 @@ import (
 
     "github.com/ariangn/todo-go/domain/entity"
     "github.com/ariangn/todo-go/domain/repository"
-    "github.com/ariangn/todo-go/domain/value-object"
+    "github.com/ariangn/todo-go/domain/valueobject"
 )
 
 type CreateUseCase interface {
@@ -23,11 +23,11 @@ func NewCreateUseCase(tagRepo repository.TagRepository) CreateUseCase {
 }
 
 func (uc *createUseCase) Execute(ctx context.Context, userID, name string) (*entity.Tag, error) {
-    nameVO, err := value-object.NewTitleVO(name) // reuse TitleVO for name non-empty
+    nameVO, err := valueobject.NewTitleVO(name) // reuse TitleVO for name non-empty
     if err != nil {
         return nil, err
     }
-    userIDVO, err := value-object.NewUserIDVO(userID)
+    userIDVO, err := valueobject.NewUserIDVO(userID)
     if err != nil {
         return nil, err
     }

@@ -8,11 +8,11 @@ import (
 
     "github.com/ariangn/todo-go/domain/entity"
     "github.com/ariangn/todo-go/domain/repository"
-    "github.com/ariangn/todo-go/domain/valueobject"
+    "github.com/ariangn/todo-go/domain/value-object"
 )
 
 type CreateUseCase interface {
-    Execute(ctx context.Context, userID, title string, body *string, dueDate *valueobject.DueDateVO, categoryID *string, tagIDs []string) (*entity.Todo, error)
+    Execute(ctx context.Context, userID, title string, body *string, dueDate *value-object.DueDateVO, categoryID *string, tagIDs []string) (*entity.Todo, error)
 }
 
 type createUseCase struct {
@@ -33,12 +33,12 @@ func (uc *createUseCase) Execute(
     ctx context.Context,
     userID, title string,
     body *string,
-    dueDate *valueobject.DueDateVO,
+    dueDate *value-object.DueDateVO,
     categoryID *string,
     tagIDs []string,
 ) (*entity.Todo, error) {
     // validate TitleVO
-    titleVO, err := valueobject.NewTitleVO(title)
+    titleVO, err := value-object.NewTitleVO(title)
     if err != nil {
         return nil, err
     }
@@ -46,7 +46,7 @@ func (uc *createUseCase) Execute(
     // validate BodyVO if provided
     var bodyStr *string
     if body != nil {
-        bodyVO, err := valueobject.NewBodyVO(*body)
+        bodyVO, err := value-object.NewBodyVO(*body)
         if err != nil {
             return nil, err
         }
@@ -55,7 +55,7 @@ func (uc *createUseCase) Execute(
     }
 
     // validate DueDateVO if provided
-    var dd *valueobject.DueDateVO
+    var dd *value-object.DueDateVO
     if dueDate != nil {
         dd = dueDate
     }

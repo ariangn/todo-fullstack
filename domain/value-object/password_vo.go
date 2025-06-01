@@ -1,4 +1,4 @@
-package valueobject
+package value-object
 
 import (
     "golang.org/x/crypto/bcrypt"

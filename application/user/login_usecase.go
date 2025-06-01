@@ -6,7 +6,7 @@ import (
     "time"
 
     "github.com/ariangn/todo-go/domain/repository"
-    "github.com/ariangn/todo-go/domain/valueobject"
+    "github.com/ariangn/todo-go/domain/value-object"
     "github.com/ariangn/todo-go/infrastructure/auth"
 )
 
@@ -35,7 +35,7 @@ func (uc *loginUseCase) Execute(ctx context.Context, email, password string) (st
         return "", ErrInvalidCredentials
     }
     // verify password
-    pwdVO := valueobject.NewPasswordVOWithHash(existing.Password)
+    pwdVO := value-object.NewPasswordVOWithHash(existing.Password)
     if !pwdVO.Verify(password) {
         return "", ErrInvalidCredentials
     }

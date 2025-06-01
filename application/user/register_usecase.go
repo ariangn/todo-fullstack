@@ -5,7 +5,7 @@ import (
 
     "github.com/ariangn/todo-go/domain/entity"
     "github.com/ariangn/todo-go/domain/repository"
-    "github.com/ariangn/todo-go/domain/valueobject"
+    "github.com/ariangn/todo-go/domain/value-object"
     "github.com/google/uuid"
 )
 
@@ -23,12 +23,12 @@ func NewRegisterUseCase(userRepo repository.UserRepository) RegisterUseCase {
 
 func (uc *registerUseCase) Execute(ctx context.Context, email, password string, name *string, timezone string, avatarURL *string) (*entity.User, error) {
     // validate email via EmailVO
-    emailVO, err := valueobject.NewEmailVO(email)
+    emailVO, err := value-object.NewEmailVO(email)
     if err != nil {
         return nil, err
     }
     // validate & hash password via PasswordVO
-    pwdVO, err := valueobject.NewPasswordVO(password)
+    pwdVO, err := value-object.NewPasswordVO(password)
     if err != nil {
         return nil, err
     }

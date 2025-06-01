@@ -8,7 +8,7 @@ import (
     "github.com/go-chi/chi/v5"
     "github.com/ariangn/todo-go/application/todo"
     "github.com/ariangn/todo-go/domain/entity"
-    "github.com/ariangn/todo-go/domain/valueobject"
+    "github.com/ariangn/todo-go/domain/value-object"
     "github.com/ariangn/todo-go/interface-adapter/dto/request"
     "github.com/ariangn/todo-go/interface-adapter/dto/response"
 )
@@ -54,9 +54,9 @@ func (tc *TodoController) Create(w http.ResponseWriter, r *http.Request) {
     }
 
     // convert dueDate to valueobject.DueDateVO if provided
-    var dueDateVO *valueobject.DueDateVO
+    var dueDateVO *value-object.DueDateVO
     if dto.DueDate != nil {
-        dvo, err := valueobject.NewDueDateVO(*dto.DueDate)
+        dvo, err := value-object.NewDueDateVO(*dto.DueDate)
         if err != nil {
             http.Error(w, err.Error(), http.StatusBadRequest)
             return

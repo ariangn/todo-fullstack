@@ -68,11 +68,15 @@ group by t.id;
 ```
 
 ## サーバー起動
+```
 go run ./cmd
+```
 （http://localhost:8080 で待機）
 
 ## テスト実行
+```
 go test ./interface-adapter/handler
+```
 
 ## プロジェクト構成
 ```

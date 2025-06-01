@@ -13,10 +13,10 @@ require (
 	github.com/supabase-community/postgrest-go v0.0.11
 	github.com/supabase-community/storage-go v0.7.0
 	golang.org/x/crypto v0.37.0
+	github.com/joho/godotenv v1.5.1 
 )
 
 require (
-	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/tomnomnom/linkheader v0.0.0-20180905144013-02ca5825eb80 // indirect
 )

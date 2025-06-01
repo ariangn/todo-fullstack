@@ -35,11 +35,12 @@ func InitializeContainer() (*Container, error) {
 	tagRepository := database.NewTagRepository(supabaseClient)
 	createUseCase := todo.NewCreateUseCase(todoRepository, categoryRepository, tagRepository)
 	listUseCase := todo.NewListUseCase(todoRepository)
+	findByIDUseCase := todo.NewFindByIDUseCase(todoRepository)
 	updateUseCase := todo.NewUpdateUseCase(todoRepository)
 	toggleStatusUseCase := todo.NewToggleStatusUseCase(todoRepository)
 	deleteUseCase := todo.NewDeleteUseCase(todoRepository)
 	duplicateUseCase := todo.NewDuplicateUseCase(todoRepository)
-	todoController := handler.NewTodoController(createUseCase, listUseCase, updateUseCase, toggleStatusUseCase, deleteUseCase, duplicateUseCase)
+	todoController := handler.NewTodoController(createUseCase, listUseCase, findByIDUseCase, updateUseCase, toggleStatusUseCase, deleteUseCase, duplicateUseCase)
 	categoryCreateUseCase := category.NewCreateUseCase(categoryRepository)
 	categoryListUseCase := category.NewListUseCase(categoryRepository)
 	categoryUpdateUseCase := category.NewUpdateUseCase(categoryRepository)
@@ -89,7 +90,7 @@ var AuthSet = wire.NewSet(auth.NewAuthClient)
 
 var UserUseCaseSet = wire.NewSet(user.NewRegisterUseCase, user.NewLoginUseCase)
 
-var TodoUseCaseSet = wire.NewSet(todo.NewCreateUseCase, todo.NewListUseCase, todo.NewUpdateUseCase, todo.NewToggleStatusUseCase, todo.NewDeleteUseCase, todo.NewDuplicateUseCase)
+var TodoUseCaseSet = wire.NewSet(todo.NewCreateUseCase, todo.NewListUseCase, todo.NewFindByIDUseCase, todo.NewUpdateUseCase, todo.NewToggleStatusUseCase, todo.NewDeleteUseCase, todo.NewDuplicateUseCase)
 
 var CategoryUseCaseSet = wire.NewSet(category.NewCreateUseCase, category.NewListUseCase, category.NewUpdateUseCase, category.NewDeleteUseCase)
 

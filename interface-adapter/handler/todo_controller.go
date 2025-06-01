@@ -1,8 +1,12 @@
+// interface-adapter/handler/todo_controller.go
 package handler
 
 import (
 	"encoding/json"
 	"net/http"
+	"time"
+
+	"github.com/go-chi/chi/v5"
 
 	"github.com/ariangn/todo-go/application/todo"
 	"github.com/ariangn/todo-go/domain/entity"
@@ -10,12 +14,12 @@ import (
 	"github.com/ariangn/todo-go/interface-adapter/dto/request"
 	"github.com/ariangn/todo-go/interface-adapter/dto/response"
 	"github.com/ariangn/todo-go/interface-adapter/middleware"
-	"github.com/go-chi/chi/v5"
 )
 
 type TodoController struct {
 	createUC     todo.CreateUseCase
 	listUC       todo.ListUseCase
+	findByIDUC   todo.FindByIDUseCase
 	updateUC     todo.UpdateUseCase
 	toggleStatus todo.ToggleStatusUseCase
 	deleteUC     todo.DeleteUseCase
@@ -25,6 +29,7 @@ type TodoController struct {
 func NewTodoController(
 	cUC todo.CreateUseCase,
 	lUC todo.ListUseCase,
+	fUC todo.FindByIDUseCase,
 	uUC todo.UpdateUseCase,
 	tUC todo.ToggleStatusUseCase,
 	dUC todo.DeleteUseCase,
@@ -33,6 +38,7 @@ func NewTodoController(
 	return &TodoController{
 		createUC:     cUC,
 		listUC:       lUC,
+		findByIDUC:   fUC,
 		updateUC:     uUC,
 		toggleStatus: tUC,
 		deleteUC:     dUC,
@@ -53,7 +59,7 @@ func (tc *TodoController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// convert dueDate to valueobject.DueDateVO if provided
+	// Convert dueDate to valueobject.DueDateVO if provided
 	var dueDateVO *valueobject.DueDateVO
 	if dto.DueDate != nil {
 		dvo, err := valueobject.NewDueDateVO(*dto.DueDate)
@@ -97,7 +103,12 @@ func (tc *TodoController) Create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (tc *TodoController) List(w http.ResponseWriter, r *http.Request) {
-	userID, _ := middleware.GetUserIDFromContext(r.Context())
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	todos, err := tc.listUC.Execute(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -124,29 +135,139 @@ func (tc *TodoController) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (tc *TodoController) GetByID(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
-	todoEntity, err := tc.listUC.Execute(r.Context() /*write a FindByIDUseCase or just call repo directly*/)
+	todoEntity, err := tc.findByIDUC.Execute(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	// TODO: implement full GetByID here, call a FindByIDUseCase
-	w.WriteHeader(http.StatusNotImplemented)
+	if todoEntity == nil || todoEntity.UserID != userID {
+		http.Error(w, "todo not found", http.StatusNotFound)
+		return
+	}
+
+	respDTO := response.TodoResponseDTO{
+		ID:          todoEntity.ID,
+		Title:       todoEntity.Title,
+		Body:        todoEntity.Body,
+		Status:      string(todoEntity.Status),
+		DueDate:     todoEntity.DueDate,
+		CompletedAt: todoEntity.CompletedAt,
+		UserID:      todoEntity.UserID,
+		CategoryID:  todoEntity.CategoryID,
+		TagIDs:      todoEntity.TagIDs,
+		CreatedAt:   todoEntity.CreatedAt,
+		UpdatedAt:   todoEntity.UpdatedAt,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(respDTO)
 }
 
 func (tc *TodoController) Update(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
+	existing, err := tc.findByIDUC.Execute(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if existing == nil || existing.UserID != userID {
+		http.Error(w, "todo not found", http.StatusNotFound)
+		return
+	}
+
 	var dto request.UpdateTodoDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		http.Error(w, "invalid request payload", http.StatusBadRequest)
 		return
 	}
-	// fetch existing, apply updates, then call tc.updateUC.Execute(...)
-	w.WriteHeader(http.StatusNotImplemented)
+
+	// Apply updates to the existing entity
+	if dto.Title != nil {
+		existing.Title = *dto.Title
+	}
+	if dto.Body != nil {
+		existing.Body = dto.Body
+	}
+	if dto.Status != nil {
+		existing.Status = entity.Status(*dto.Status)
+		if existing.Status == entity.StatusCompleted {
+			now := time.Now().UTC()
+			existing.CompletedAt = &now
+		} else {
+			existing.CompletedAt = nil
+		}
+	}
+	if dto.DueDate != nil {
+		// dto.DueDate is *time.Time; use its value directly
+		dvo, err := valueobject.NewDueDateVO(*dto.DueDate)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		t := dvo.Time()
+		existing.DueDate = &t
+	}
+	if dto.CategoryID != nil {
+		existing.CategoryID = dto.CategoryID
+	}
+	if dto.TagIDs != nil {
+		existing.TagIDs = *dto.TagIDs
+	}
+	existing.UpdatedAt = time.Now().UTC()
+
+	updated, err := tc.updateUC.Execute(r.Context(), existing)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	respDTO := response.TodoResponseDTO{
+		ID:          updated.ID,
+		Title:       updated.Title,
+		Body:        updated.Body,
+		Status:      string(updated.Status),
+		DueDate:     updated.DueDate,
+		CompletedAt: updated.CompletedAt,
+		UserID:      updated.UserID,
+		CategoryID:  updated.CategoryID,
+		TagIDs:      updated.TagIDs,
+		CreatedAt:   updated.CreatedAt,
+		UpdatedAt:   updated.UpdatedAt,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(respDTO)
 }
 
 func (tc *TodoController) ToggleStatus(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
+	existing, err := tc.findByIDUC.Execute(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if existing == nil || existing.UserID != userID {
+		http.Error(w, "todo not found", http.StatusNotFound)
+		return
+	}
+
 	var body struct {
 		Status string `json:"status"`
 	}
@@ -155,11 +276,13 @@ func (tc *TodoController) ToggleStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	newStatus := entity.Status(body.Status)
+
 	updated, err := tc.toggleStatus.Execute(r.Context(), id, newStatus)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	respDTO := response.TodoResponseDTO{
 		ID:          updated.ID,
 		Title:       updated.Title,
@@ -178,7 +301,23 @@ func (tc *TodoController) ToggleStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (tc *TodoController) Delete(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
+	existing, err := tc.findByIDUC.Execute(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if existing == nil || existing.UserID != userID {
+		http.Error(w, "todo not found", http.StatusNotFound)
+		return
+	}
+
 	if err := tc.deleteUC.Execute(r.Context(), id); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -187,12 +326,29 @@ func (tc *TodoController) Delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (tc *TodoController) Duplicate(w http.ResponseWriter, r *http.Request) {
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
 	id := chi.URLParam(r, "id")
+	existing, err := tc.findByIDUC.Execute(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if existing == nil || existing.UserID != userID {
+		http.Error(w, "todo not found", http.StatusNotFound)
+		return
+	}
+
 	dup, err := tc.duplicateUC.Execute(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	respDTO := response.TodoResponseDTO{
 		ID:          dup.ID,
 		Title:       dup.Title,

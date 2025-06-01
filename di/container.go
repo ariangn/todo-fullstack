@@ -54,6 +54,7 @@ var UserUseCaseSet = wire.NewSet(
 var TodoUseCaseSet = wire.NewSet(
 	todo.NewCreateUseCase,
 	todo.NewListUseCase,
+	todo.NewFindByIDUseCase,
 	todo.NewUpdateUseCase,
 	todo.NewToggleStatusUseCase,
 	todo.NewDeleteUseCase,

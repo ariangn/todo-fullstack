@@ -1,39 +1,53 @@
 package database
 
 import (
-    "log"
-    "os"
+	"log"
+	"os"
 
-    postgrest "github.com/supabase-community/postgrest-go"
-    auth "github.com/supabase-community/auth-go"
-    storage "github.com/supabase-community/storage-go"
+	auth "github.com/supabase-community/auth-go"
+	postgrest "github.com/supabase-community/postgrest-go"
+	storage "github.com/supabase-community/storage-go"
 )
 
+// SupabaseClient holds all Supabase‐related subclients.
 type SupabaseClient struct {
-    Auth    *auth.Client
-    DB      *postgrest.Client
-    Storage *storage.Client
+	Auth    auth.Client // auth.New returns auth.Client (an interface)
+	DB      *postgrest.Client
+	Storage *storage.Client
 }
 
+// NewSupabaseClient initializes the Supabase Auth, PostgREST, and Storage clients.
+// It reads SUPABASE_URL and SUPABASE_KEY from the environment.
 func NewSupabaseClient() (*SupabaseClient, error) {
-    url := os.Getenv("SUPABASE_URL")
-    key := os.Getenv("SUPABASE_KEY")
-    if url == "" || key == "" {
-        log.Fatal("SUPABASE_URL and SUPABASE_KEY must be set in environment")
-    }
+	baseURL := os.Getenv("SUPABASE_URL")
+	apiKey := os.Getenv("SUPABASE_KEY")
+	if baseURL == "" || apiKey == "" {
+		log.Fatal("SUPABASE_URL and SUPABASE_KEY must be set")
+	}
 
-    // Initialize Supabase Auth 
-    authClient := auth.NewClient(url+"/auth/v1", auth.WithAPIKey(key))
+	// 1) Initialize Auth client
+	// auth.New takes (projectReference, apiKey) and returns auth.Client (an interface).
+	projectRef := baseURL
+	if len(projectRef) >= 8 && projectRef[:8] == "https://" {
+		projectRef = projectRef[8:]
+	}
+	clientAuth := auth.New(projectRef, apiKey)
 
-    // Initialize PostgREST (database) client
-    dbClient := postgrest.New(url+"/rest/v1", postgrest.WithAPIKey(key))
+	// 2) Initialize PostgREST client
+	restURL := baseURL + "/rest/v1"
+	headers := map[string]string{
+		"apikey":        apiKey,
+		"Authorization": "Bearer " + apiKey,
+	}
+	dbClient := postgrest.NewClient(restURL, "public", headers)
 
-    // Initialize Supabase Storage client
-    storageClient := storage.NewClient(url, key)
+	// 3) Initialize Storage client
+	storageURL := baseURL + "/storage/v1"
+	storageClient := storage.NewClient(storageURL, apiKey, headers)
 
-    return &SupabaseClient{
-        Auth:    authClient,
-        DB:      dbClient,
-        Storage: storageClient,
-    }, nil
+	return &SupabaseClient{
+		Auth:    clientAuth,
+		DB:      dbClient,
+		Storage: storageClient,
+	}, nil
 }

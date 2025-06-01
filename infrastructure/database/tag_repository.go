@@ -1,111 +1,125 @@
 package database
 
 import (
-    "context"
-    "errors"
+	"context"
+	"encoding/json"
+	"errors"
 
-    "github.com/ariangn/todo-go/domain/entity"
-    "github.com/ariangn/todo-go/domain/repository"
-    "github.com/ariangn/todo-go/infrastructure/database/model"
-    "github.com/google/uuid"
+	"github.com/google/uuid"
+
+	"github.com/ariangn/todo-go/domain/entity"
+	"github.com/ariangn/todo-go/domain/repository"
+	"github.com/ariangn/todo-go/infrastructure/database/model"
 )
 
 type tagRepository struct {
-    supabase *SupabaseClient
+	supabase *SupabaseClient
 }
 
 func NewTagRepository(supabase *SupabaseClient) repository.TagRepository {
-    return &tagRepository{supabase}
+	return &tagRepository{supabase}
 }
 
 func (r *tagRepository) Create(ctx context.Context, t *entity.Tag) (*entity.Tag, error) {
-    t.ID = uuid.NewString()
-    row := map[string]interface{}{
-        "id":      t.ID,
-        "name":    t.Name,
-        "user_id": t.UserID,
-    }
-    resp, err := r.supabase.DB.
-        From("tags").
-        Insert(row).
-        Single().
-        Execute(ctx)
-    if err != nil {
-        return nil, err
-    }
-    var m model.TagModel
-    if err := resp.JSON(&m); err != nil {
-        return nil, err
-    }
-    return model.ToDomainTag(&m), nil
+	t.ID = uuid.NewString()
+	toInsert := map[string]interface{}{
+		"id":      t.ID,
+		"name":    t.Name,
+		"user_id": t.UserID,
+	}
+
+	builder := r.supabase.DB.
+		From("tags").
+		Insert(toInsert, false, "", "*", "").
+		Single()
+
+	raw, _, err := builder.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var m model.TagModel
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return nil, err
+	}
+	return model.ToDomainTag(&m), nil
 }
 
 func (r *tagRepository) FindByID(ctx context.Context, id string) (*entity.Tag, error) {
-    resp, err := r.supabase.DB.
-        From("tags").
-        Select("*").
-        Eq("id", id).
-        Single().
-        Execute(ctx)
-    if err != nil {
-        return nil, err
-    }
-    var m model.TagModel
-    if err := resp.JSON(&m); err != nil {
-        return nil, err
-    }
-    return model.ToDomainTag(&m), nil
+	builder := r.supabase.DB.
+		From("tags").
+		Select("*", "", false).
+		Eq("id", id).
+		Single()
+
+	raw, _, err := builder.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var m model.TagModel
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return nil, err
+	}
+	return model.ToDomainTag(&m), nil
 }
 
 func (r *tagRepository) FindAllByUser(ctx context.Context, userID string) ([]*entity.Tag, error) {
-    resp, err := r.supabase.DB.
-        From("tags").
-        Select("*").
-        Eq("user_id", userID).
-        Execute(ctx)
-    if err != nil {
-        return nil, err
-    }
-    var models []model.TagModel
-    if err := resp.JSON(&models); err != nil {
-        return nil, err
-    }
-    var tags []*entity.Tag
-    for _, m := range models {
-        tags = append(tags, model.ToDomainTag(&m))
-    }
-    return tags, nil
+	builder := r.supabase.DB.
+		From("tags").
+		Select("*", "", false).
+		Eq("user_id", userID)
+
+	raw, _, err := builder.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var models []model.TagModel
+	if err := json.Unmarshal(raw, &models); err != nil {
+		return nil, err
+	}
+
+	var tags []*entity.Tag
+	for _, m := range models {
+		tags = append(tags, model.ToDomainTag(&m))
+	}
+	return tags, nil
 }
 
 func (r *tagRepository) Update(ctx context.Context, t *entity.Tag) (*entity.Tag, error) {
-    if t.ID == "" {
-        return nil, errors.New("tag ID is required")
-    }
-    updates := map[string]interface{}{}
-    if t.Name != "" {
-        updates["name"] = t.Name
-    }
-    resp, err := r.supabase.DB.
-        From("tags").
-        Update(updates).
-        Eq("id", t.ID).
-        Single().
-        Execute(ctx)
-    if err != nil {
-        return nil, err
-    }
-    var m model.TagModel
-    if err := resp.JSON(&m); err != nil {
-        return nil, err
-    }
-    return model.ToDomainTag(&m), nil
+	if t.ID == "" {
+		return nil, errors.New("tag ID is required")
+	}
+	updates := map[string]interface{}{}
+	if t.Name != "" {
+		updates["name"] = t.Name
+	}
+
+	builder := r.supabase.DB.
+		From("tags").
+		Update(updates, "*", "").
+		Eq("id", t.ID).
+		Single()
+
+	raw, _, err := builder.Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	var m model.TagModel
+	if err := json.Unmarshal(raw, &m); err != nil {
+		return nil, err
+	}
+	return model.ToDomainTag(&m), nil
 }
 
 func (r *tagRepository) Delete(ctx context.Context, id string) error {
-    _, err := r.supabase.DB.
-        From("tags").
-        Delete().
-        Eq("id", id).
-        Execute(ctx)
-    return err
+	builder := r.supabase.DB.
+		From("tags").
+		Delete("*", "").
+		Eq("id", id)
+
+	_, _, err := builder.Execute()
+	return err
 }

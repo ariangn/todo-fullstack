@@ -9,11 +9,11 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/google/uuid v1.6.0
 	github.com/google/wire v0.6.0
+	github.com/joho/godotenv v1.5.1
 	github.com/supabase-community/auth-go v1.3.2
 	github.com/supabase-community/postgrest-go v0.0.11
 	github.com/supabase-community/storage-go v0.7.0
 	golang.org/x/crypto v0.37.0
-	github.com/joho/godotenv v1.5.1 
 )
 
 require (

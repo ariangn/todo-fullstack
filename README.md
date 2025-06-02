@@ -1,11 +1,11 @@
-# todo-go
+# todo-fullstack/backend
 
 ## 環境変数設定
 プロジェクトルートに `.env.example`を参考に `.env` を作成する
 
 ## インストール
 ```
-git clone https://github.com/ariangn/todo-go.git
+git clone https://github.com/ariangn/todo-fullstack/backend.git
 cd todo-go
 go mod tidy
 go install github.com/google/wire/cmd/wire@latest

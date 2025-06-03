@@ -44,6 +44,7 @@ func main() {
 		// 2) Protected endpoints (require JWT)
 		r.Group(func(r chi.Router) {
 			r.Use(custommw.AuthMiddleware(container.AuthClient))
+			r.Get("/auth/me", container.UserController.Me)
 
 			// /api/todos/*
 			r.Route("/todos", func(r chi.Router) {

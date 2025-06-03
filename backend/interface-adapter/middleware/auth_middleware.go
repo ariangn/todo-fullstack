@@ -12,9 +12,11 @@ type ctxKey string
 
 const userIDKey ctxKey = "userID"
 
+// AuthMiddleware validates the Bearer token and stores the user ID in context.
 func AuthMiddleware(authClient auth.AuthClientInterface) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			// Expect header: Authorization: Bearer <token>
 			header := r.Header.Get("Authorization")
 			if header == "" {
 				http.Error(w, "missing Authorization header", http.StatusUnauthorized)
@@ -26,23 +28,29 @@ func AuthMiddleware(authClient auth.AuthClientInterface) func(http.Handler) http
 				return
 			}
 			tokenString := parts[1]
+
+			// Validate the JWT and extract claims
 			claims, err := authClient.ValidateToken(tokenString)
 			if err != nil {
 				http.Error(w, "invalid token", http.StatusUnauthorized)
 				return
 			}
+
+			// Expect the “sub” claim to be the user’s ID
 			sub, ok := claims["sub"].(string)
 			if !ok {
 				http.Error(w, "invalid token subject", http.StatusUnauthorized)
 				return
 			}
+
+			// Store userID in context for downstream handlers
 			ctx := context.WithValue(r.Context(), userIDKey, sub)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-// extracts the userID from context if set
+// GetUserIDFromContext extracts the userID (string) from context, if present.
 func GetUserIDFromContext(ctx context.Context) (string, bool) {
 	id, ok := ctx.Value(userIDKey).(string)
 	return id, ok

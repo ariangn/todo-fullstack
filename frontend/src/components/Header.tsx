@@ -15,7 +15,7 @@ export default function Header({
       <Link to="/dashboard" className="flex items-center space-x-2">
         {/* Placeholder logo */}
         <img src="/placeholder-logo.svg" alt="Logo" className="h-8 w-8" />
-        <span className="text-xl font-semibold text-gray-800">TodoFullstack</span>
+        <span className="text-xl font-semibold text-gray-800">conquest</span>
       </Link>
 
       <div className="flex items-center space-x-4">

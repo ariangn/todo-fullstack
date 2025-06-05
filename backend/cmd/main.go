@@ -1,4 +1,3 @@
-// cmd/main.go
 package main
 
 import (
@@ -10,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 
@@ -18,43 +18,48 @@ import (
 )
 
 func main() {
-	// load .env
+	// Load environment variables
 	if err := godotenv.Load(); err != nil {
 		log.Printf("warning: could not load .env file: %v", err)
 	}
+
 	// Initialize DI container
 	container, err := di.InitializeContainer()
 	if err != nil {
 		log.Fatalf("failed to initialize container: %v", err)
 	}
 
-	// Set up router
-	r := chi.NewRouter()
 	clientOrigin := os.Getenv("CLIENT_ORIGIN")
 	if clientOrigin == "" {
-		log.Fatal("CLIENT_ORIGIN must be set")
+		log.Fatal("CLIENT_ORIGIN must be set in your .env file")
 	}
 
+	// Set up router with common middleware
+	r := chi.NewRouter()
+	r.Use(middleware.Logger)    // logs every request
+	r.Use(middleware.Recoverer) // prevents panics from crashing server
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{clientOrigin},
 		AllowCredentials: true,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
 	}))
 
-	// Single /api route group
+	// Define /api routes
 	r.Route("/api", func(r chi.Router) {
-		// 1) Public endpoints:
+		// Public routes
 		r.Post("/users/register", container.UserController.Register)
 		r.Post("/users/login", container.UserController.Login)
 
-		// 2) Protected endpoints (require JWT)
+		// Protected routes
 		r.Group(func(r chi.Router) {
 			r.Use(custommw.AuthMiddleware(container.AuthClient))
+
+			// Auth info
 			r.Get("/auth/me", container.UserController.Me)
 			r.Post("/users/logout", container.UserController.Logout)
 
-			// /api/todos/*
+			// Todos
 			r.Route("/todos", func(r chi.Router) {
 				r.Post("/", container.TodoController.Create)
 				r.Get("/", container.TodoController.List)
@@ -65,7 +70,7 @@ func main() {
 				r.Post("/{id}/duplicate", container.TodoController.Duplicate)
 			})
 
-			// /api/categories/*
+			// Categories
 			r.Route("/categories", func(r chi.Router) {
 				r.Post("/", container.CategoryController.Create)
 				r.Get("/", container.CategoryController.List)
@@ -73,7 +78,7 @@ func main() {
 				r.Delete("/{id}", container.CategoryController.Delete)
 			})
 
-			// /api/tags/*
+			// Tags
 			r.Route("/tags", func(r chi.Router) {
 				r.Post("/", container.TagController.Create)
 				r.Get("/", container.TagController.List)
@@ -83,7 +88,7 @@ func main() {
 		})
 	})
 
-	// HTTP server with graceful shutdown
+	// Start server with graceful shutdown
 	srv := &http.Server{
 		Addr:         ":8080",
 		Handler:      r,
@@ -93,22 +98,24 @@ func main() {
 	}
 
 	go func() {
-		log.Printf("Server listening on %s\n", srv.Addr)
+		log.Printf("server listening on %s", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			log.Fatalf("server failed: %v", err)
 		}
 	}()
 
-	// Wait for interrupt to gracefully shut down
+	// Handle shutdown signal
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
-	log.Println("Shutting down server...")
+	log.Println("shutting down server...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Fatalf("Server forced to shutdown: %v", err)
+		log.Fatalf("forced to shutdown: %v", err)
 	}
-	log.Println("Server stopped")
+
+	log.Println("server exited cleanly")
 }

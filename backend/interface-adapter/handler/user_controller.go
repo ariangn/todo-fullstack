@@ -3,6 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"os"
+
+	"bytes"
+	"fmt"
+	"io"
 
 	"github.com/ariangn/todo-fullstack/backend/application/user"
 	"github.com/ariangn/todo-fullstack/backend/interface-adapter/dto/request"
@@ -29,6 +34,9 @@ func NewUserController(
 }
 
 func (uc *UserController) Register(w http.ResponseWriter, r *http.Request) {
+	bodyBytes, _ := io.ReadAll(r.Body)
+	fmt.Println("RAW BODY:", string(bodyBytes))
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // Re-use body
 	var dto request.CreateUserDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		http.Error(w, "invalid request payload", http.StatusBadRequest)
@@ -75,8 +83,32 @@ func (uc *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"token": token})
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   os.Getenv("ENV") == "production", // HTTPS only in prod
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   60 * 60 * 24, // 1 day
+	})
+
+	// Optionally return user info or a success message
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "login successful"})
+}
+
+func (uc *UserController) Logout(w http.ResponseWriter, r *http.Request) {
+	// Expire the cookie by setting MaxAge to -1
+	http.SetCookie(w, &http.Cookie{
+		Name:     "token",
+		Value:    "",
+		Path:     "/",
+		HttpOnly: true,
+		MaxAge:   -1,
+	})
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]string{"message": "logout successful"})
 }
 
 // Me returns the currently authenticated user's info (requires AuthMiddleware).

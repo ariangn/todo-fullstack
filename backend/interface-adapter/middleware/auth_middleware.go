@@ -3,7 +3,6 @@ package middleware
 import (
 	"context"
 	"net/http"
-	"strings"
 
 	"github.com/ariangn/todo-fullstack/backend/infrastructure/auth"
 )
@@ -12,25 +11,19 @@ type ctxKey string
 
 const userIDKey ctxKey = "userID"
 
-// AuthMiddleware validates the Bearer token and stores the user ID in context.
+// AuthMiddleware validates the token from HTTP-only cookie and stores the user ID in context.
 func AuthMiddleware(authClient auth.AuthClientInterface) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Expect header: Authorization: Bearer <token>
-			header := r.Header.Get("Authorization")
-			if header == "" {
-				http.Error(w, "missing Authorization header", http.StatusUnauthorized)
+			// Read the "token" cookie
+			cookie, err := r.Cookie("token")
+			if err != nil || cookie.Value == "" {
+				http.Error(w, "missing or invalid token", http.StatusUnauthorized)
 				return
 			}
-			parts := strings.SplitN(header, " ", 2)
-			if len(parts) != 2 || parts[0] != "Bearer" {
-				http.Error(w, "invalid Authorization format", http.StatusUnauthorized)
-				return
-			}
-			tokenString := parts[1]
 
 			// Validate the JWT and extract claims
-			claims, err := authClient.ValidateToken(tokenString)
+			claims, err := authClient.ValidateToken(cookie.Value)
 			if err != nil {
 				http.Error(w, "invalid token", http.StatusUnauthorized)
 				return

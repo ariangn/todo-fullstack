@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
+
+	"fmt"
 
 	"github.com/ariangn/todo-fullstack/backend/domain/entity"
 	"github.com/ariangn/todo-fullstack/backend/domain/repository"
@@ -36,18 +39,34 @@ func (r *userRepository) Create(ctx context.Context, u *entity.User) (*entity.Us
 	// Perform: INSERT INTO users (...) RETURNING *
 	builder := r.supabase.DB.
 		From("users").
-		Insert(toInsert, false, "", "*", "").
-		Single()
+		Insert(toInsert, false, "", "return=representation", "")
 
-	raw, _, err := builder.Execute()
+	raw, status, err := builder.Execute()
+	fmt.Println("Supabase status:", status)
+	fmt.Println("Supabase raw:", string(raw))
+	if err == nil && status == 0 {
+		return nil, errors.New("supabase request failed: no response returned (status 0)")
+	}
 	if err != nil {
 		return nil, err
 	}
+	if strings.Contains(err.Error(), "duplicate key value") {
+		return nil, errors.New("email is already taken")
+	}
+	if status >= 400 {
+		if len(raw) == 0 {
+			return nil, errors.New("supabase insert failed with status " + fmt.Sprint(status) + ", but no error message was returned")
+		}
+		return nil, errors.New(string(raw))
+	}
+
+	fmt.Println("Supabase raw:", string(raw))
 
 	var m model.UserModel
 	if err := json.Unmarshal(raw, &m); err != nil {
-		return nil, err
+		return nil, errors.New("failed to decode user response: " + err.Error())
 	}
+
 	return model.ToDomainUser(&m), nil
 }
 

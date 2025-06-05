@@ -22,7 +22,7 @@ export default function SignupPage({ onSignup }: SignupPageProps) {
   const navigate = useNavigate();
 
   // Use default timezone; no setter needed since we don't allow changing it in the form
-  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

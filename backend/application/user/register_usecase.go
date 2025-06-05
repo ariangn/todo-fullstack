@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 
+	"fmt"
+
 	"github.com/ariangn/todo-fullstack/backend/domain/entity"
 	"github.com/ariangn/todo-fullstack/backend/domain/repository"
 	"github.com/ariangn/todo-fullstack/backend/domain/valueobject"
@@ -26,17 +28,20 @@ func (uc *registerUseCase) Execute(ctx context.Context, email, password string, 
 	// validate email via EmailVO
 	emailVO, err := valueobject.NewEmailVO(email)
 	if err != nil {
+		fmt.Println("Email validation failed:", err)
 		return nil, err
 	}
 	// validate & hash password via PasswordVO
 	pwdVO, err := valueobject.NewPasswordVO(password)
 	if err != nil {
+		fmt.Println("Password validation failed:", err)
 		return nil, err
 	}
 	hashedPwd := pwdVO.Hash()
 
 	// use ValueObject for timezone (just non-empty check)
 	if timezone == "" {
+		fmt.Println("Missing timezone")
 		return nil, ErrTimezoneMissing
 	}
 
@@ -50,9 +55,15 @@ func (uc *registerUseCase) Execute(ctx context.Context, email, password string, 
 		timezone,
 	)
 	if err != nil {
+		fmt.Println("User creation failed:", err)
 		return nil, err
 	}
-	return uc.userRepo.Create(ctx, userEntity)
+	res, err := uc.userRepo.Create(ctx, userEntity)
+	if err != nil {
+		fmt.Println("User repo creation failed:", err)
+		return nil, err
+	}
+	return res, nil
 }
 
 var ErrTimezoneMissing = errors.New("timezone is required")

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 
 	"github.com/ariangn/todo-fullstack/backend/di"
@@ -22,7 +22,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Printf("warning: could not load .env file: %v", err)
 	}
-
+	log.Println("SUPABASE_URL =", os.Getenv("SUPABASE_URL"))
 	// Initialize DI container
 	container, err := di.InitializeContainer()
 	if err != nil {
@@ -31,9 +31,17 @@ func main() {
 
 	// Set up router
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(10 * time.Second))
+	clientOrigin := os.Getenv("CLIENT_ORIGIN")
+	if clientOrigin == "" {
+		log.Fatal("CLIENT_ORIGIN must be set")
+	}
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{clientOrigin},
+		AllowCredentials: true,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+	}))
 
 	// Single /api route group
 	r.Route("/api", func(r chi.Router) {
@@ -45,6 +53,7 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(custommw.AuthMiddleware(container.AuthClient))
 			r.Get("/auth/me", container.UserController.Me)
+			r.Post("/users/logout", container.UserController.Logout)
 
 			// /api/todos/*
 			r.Route("/todos", func(r chi.Router) {

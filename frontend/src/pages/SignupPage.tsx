@@ -4,12 +4,16 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { signup } from "../services/authService";
-import type { User } from "../services/authService";
 import { useNavigate, Link } from "react-router-dom";
 
 interface SignupPageProps {
-  onSignup: (user: User) => void;
+  onSignup: (
+    email: string,
+    password: string,
+    name: string,
+    timezone: string,
+    avatarUrl?: string
+  ) => void;
 }
 
 export default function SignupPage({ onSignup }: SignupPageProps) {
@@ -29,8 +33,7 @@ export default function SignupPage({ onSignup }: SignupPageProps) {
     setError(null);
     setLoading(true);
     try {
-      const user = await signup(email, password, name || undefined, timezone, avatarUrl || undefined);
-      onSignup(user);
+      onSignup(email, password, name || "", timezone, avatarUrl || undefined);
       navigate("/dashboard");
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

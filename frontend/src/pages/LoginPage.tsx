@@ -1,15 +1,12 @@
-// src/pages/LoginPage.tsx
 import React, { useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { login } from "../services/authService";
-import type { User } from "../services/authService";
 import { useNavigate, Link } from "react-router-dom";
 
 interface LoginPageProps {
-  onLogin: (user: User) => void;
+  onLogin: (email: string, password: string) => void;
 }
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
@@ -24,8 +21,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     setError(null);
     setLoading(true);
     try {
-      const user = await login(email, password);
-      onLogin(user);
+      onLogin(email, password);
       navigate("/dashboard");
     } catch (err) {
       // err could be Error or something else

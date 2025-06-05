@@ -22,7 +22,6 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Printf("warning: could not load .env file: %v", err)
 	}
-	log.Println("SUPABASE_URL =", os.Getenv("SUPABASE_URL"))
 	// Initialize DI container
 	container, err := di.InitializeContainer()
 	if err != nil {

@@ -41,7 +41,7 @@ export async function signup(
 }
 
 export async function fetchMe(): Promise<User> {
-  const res = await fetch("/api/users/me", {
+  const res = await fetch("/api/auth/me", {
     method: "GET",
     credentials: "include",
   });

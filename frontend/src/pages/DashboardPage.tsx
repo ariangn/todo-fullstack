@@ -219,7 +219,7 @@ export default function DashboardPage({
           mode="create"
           status={modal.status}
           categories={categories}
-          tags={tags.map((t) => t.name)}
+          tags={(tags ?? []).map((t) => t.name)}
           onSave={async (data) => {
             await fetch("/api/todos", {
               method: "POST",

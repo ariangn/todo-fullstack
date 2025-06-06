@@ -57,13 +57,19 @@ export default function TaskModal({
   const [dueDate, setDueDate] = useState<Date | undefined>(
     todo?.dueDate ? new Date(todo.dueDate) : undefined
   );
-  const [categoryId, setCategoryId] = useState<string>(todo?.categoryId || "");
+  const [categoryId, setCategoryId] = useState<string | undefined>(
+    todo?.categoryId ?? undefined
+  );
   const [tagInput, setTagInput] = useState<string>("");
   const [selectedTags, setSelectedTags] = useState<string[]>(todo?.tags || []);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const badCats = categories.filter((cat) => !cat.id || cat.id.trim() === "");
+    if (badCats.length > 0) {
+      console.warn("Invalid categories detected:", badCats);
+    }
     if (mode === "edit" && todo) {
       setTitle(todo.title);
       setBody(todo.body || "");
@@ -71,7 +77,7 @@ export default function TaskModal({
       setCategoryId(todo.categoryId || "");
       setSelectedTags(todo.tags);
     }
-  }, [mode, todo]);
+  }, [mode, todo, categories]);
 
   const handleAddTag = () => {
     const trimmed = tagInput.trim();
@@ -93,13 +99,21 @@ export default function TaskModal({
     }
     setError(null);
     setLoading(true);
+    // console.log("Submitting task:", {
+    //   title,
+    //   body,
+    //   dueDate: dueDate ? dueDate.toISOString() : undefined,
+    //   status: mode === "create" ? status! : todo!.status,
+    //   categoryId,
+    //   tags: selectedTags,
+    // });
     try {
       await onSave({
         title: title.trim(),
         body: body.trim() || undefined,
         dueDate: dueDate ? dueDate.toISOString() : undefined,
         status: mode === "create" ? status! : todo!.status,
-        categoryId: categoryId || undefined,
+        categoryId: categoryId !== "none" ? categoryId : undefined,
         tags: selectedTags,
       });
       onClose();
@@ -189,13 +203,13 @@ export default function TaskModal({
             <Label htmlFor="task-category">Category</Label>
             <Select
               onValueChange={(v: string) => setCategoryId(v)}
-              value={categoryId}
+              value={categoryId ?? undefined}
             >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">None</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}

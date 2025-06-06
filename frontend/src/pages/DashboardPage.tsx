@@ -54,7 +54,8 @@ export default function DashboardPage({
   const [modal, setModal] = useState<ModalType>(null);
 
   const loadAllData = useCallback(async () => {
-    const allTodos = await fetchAllTodos();
+    let allTodos = await fetchAllTodos();
+    if (!Array.isArray(allTodos)) allTodos = [];
     let filtered = allTodos;
 
     if (filterCats.length) {
@@ -67,8 +68,8 @@ export default function DashboardPage({
     }
 
     filtered.sort((a, b) => {
-      const aVal = new Date(a[sortBy]!).getTime();
-      const bVal = new Date(b[sortBy]!).getTime();
+      const aVal = a[sortBy] ? new Date(a[sortBy]!).getTime() : 0;
+      const bVal = b[sortBy] ? new Date(b[sortBy]!).getTime() : 0;
       return aVal - bVal;
     });
 

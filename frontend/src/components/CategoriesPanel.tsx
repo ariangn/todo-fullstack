@@ -53,7 +53,7 @@ export default function CategoriesPanel({
     <div>
       <h2 className="text-lg font-medium mb-4">Categories</h2>
       <ul className="space-y-2 mb-4">
-        {categories.map((cat) => (
+        {(categories ?? []).map((cat) => (
           <li
             key={cat.id}
             className="flex items-center p-2 rounded hover:bg-gray-100 cursor-pointer"

@@ -3,6 +3,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -109,8 +110,10 @@ func (tc *TodoController) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("userID: %s\n", userID)
 	todos, err := tc.listUC.Execute(r.Context(), userID)
 	if err != nil {
+		log.Printf("error in listUC.Execute: %v\n", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

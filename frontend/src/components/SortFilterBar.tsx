@@ -85,7 +85,7 @@ export default function SortFilterBar({
         <DropdownMenuContent className="w-64">
           <DropdownMenuLabel className="font-medium">Categories</DropdownMenuLabel>
           <DropdownMenuGroup>
-            {categories.map((cat) => (
+            {(categories ?? []).map((cat) => (
               <DropdownMenuItem
                 key={cat.id}
                 className="flex items-center space-x-2"
@@ -104,7 +104,7 @@ export default function SortFilterBar({
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="font-medium">Tags</DropdownMenuLabel>
           <DropdownMenuGroup>
-            {tags.map((tg) => (
+            {(tags ?? []).map((tg) => (
               <DropdownMenuItem
                 key={tg.id}
                 className="flex items-center space-x-2"

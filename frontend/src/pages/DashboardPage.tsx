@@ -1,5 +1,5 @@
-import type { DragEndEvent } from "@dnd-kit/core";
-import { DndContext } from "@dnd-kit/core";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import { DndContext, DragOverlay } from "@dnd-kit/core";
 import { useEffect, useState, useCallback } from "react";
 import Header from "../components/Header";
 import SortFilterBar from "../components/SortFilterBar";
@@ -24,34 +24,25 @@ import { logout, type User } from "../services/authService";
 import CategoryModal from "../components/CategoryModal";
 import TaskModal from "../components/TaskModal";
 import TagModal from "../components/TagModal";
+import TaskCard from "../components/TaskCard";
 
-type SortKey = "dueDate" | "createdAt" | "updatedAt";
-
-type ModalType =
-  | null
-  | { type: "addTask"; status: Todo["status"] }
-  | { type: "editTask"; todo: Todo }
-  | { type: "addCategory" }
-  | { type: "editCategory"; categoryId: string }
-  | { type: "addTag" }
-  | { type: "editTag"; tagId: string };
-
-interface DashboardPageProps {
-  user: User;
-  onLogout: () => void;
-}
-
-export default function DashboardPage({
-  user,
-  onLogout,
-}: DashboardPageProps) {
+export default function DashboardPage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [sortBy, setSortBy] = useState<SortKey>("dueDate");
+  const [sortBy, setSortBy] = useState<"dueDate" | "createdAt" | "updatedAt">("dueDate");
   const [filterCats, setFilterCats] = useState<string[]>([]);
   const [filterTags, setFilterTags] = useState<string[]>([]);
-  const [modal, setModal] = useState<ModalType>(null);
+  const [modal, setModal] = useState<
+    | null
+    | { type: "addTask"; status: Todo["status"] }
+    | { type: "editTask"; todo: Todo }
+    | { type: "addCategory" }
+    | { type: "editCategory"; categoryId: string }
+    | { type: "addTag" }
+    | { type: "editTag"; tagId: string }
+  >(null);
+  const [activeTodo, setActiveTodo] = useState<Todo | null>(null);
 
   const loadAllData = useCallback(async () => {
     let allTodos = await fetchAllTodos();
@@ -62,9 +53,7 @@ export default function DashboardPage({
       filtered = filtered.filter((t) => filterCats.includes(t.categoryId || ""));
     }
     if (filterTags.length) {
-      filtered = filtered.filter((t) =>
-        t.tags.some((tag) => filterTags.includes(tag))
-      );
+      filtered = filtered.filter((t) => t.tags.some((tag) => filterTags.includes(tag)));
     }
 
     filtered.sort((a, b) => {
@@ -82,44 +71,28 @@ export default function DashboardPage({
     void loadAllData();
   }, [loadAllData]);
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const dragged = todos.find((t) => t.id === event.active.id);
+    setActiveTodo(dragged || null);
+  };
+
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (over && active.id !== over.id) {
-      const newStatus = over.id as Todo["status"];
+    setActiveTodo(null);
+    if (!over || active.id === over.id) return;
+
+    const newStatus = over.id as Todo["status"];
+    const draggedTodo = todos.find((t) => t.id === active.id);
+    if (!draggedTodo || draggedTodo.status === newStatus) return;
+
+    try {
+      setTodos((prev) =>
+        prev.map((t) => (t.id === active.id ? { ...t, status: newStatus } : t))
+      );
       await updateTodoStatus(active.id as string, newStatus);
-      void loadAllData();
+    } catch (err) {
+      console.error("Failed to update status", err);
     }
-  };
-
-  const handleSortChange = (key: SortKey) => {
-    setSortBy(key);
-  };
-  const handleFilterChange = (cats: string[], tgs: string[]) => {
-    setFilterCats(cats);
-    setFilterTags(tgs);
-  };
-
-  const handleAddCategory = () => {
-    setModal({ type: "addCategory" });
-  };
-  const handleEditCategory = (categoryId: string) => {
-    setModal({ type: "editCategory", categoryId });
-  };
-  const handleDeleteCategory = async (categoryId: string) => {
-    await deleteCategory(categoryId);
-    void loadAllData();
-  };
-
-  const handleAddTask = (status: Todo["status"]) => {
-    setModal({ type: "addTask", status });
-  };
-  const handleDeleteTask = async (id: string) => {
-    await apiDeleteTodo(id);
-    void loadAllData();
-  };
-
-  const closeModal = () => {
-    setModal(null);
   };
 
   const todosByStatus: Record<Todo["status"], Todo[]> = {
@@ -133,6 +106,8 @@ export default function DashboardPage({
     onLogout();
   };
 
+  const closeModal = () => setModal(null);
+
   return (
     <div className="h-screen flex flex-col">
       <Header
@@ -143,47 +118,42 @@ export default function DashboardPage({
 
       <div className="flex-1 flex overflow-hidden">
         <div className="flex-1 flex flex-col p-6 overflow-hidden">
-          <SortFilterBar
-            onSortChange={handleSortChange}
-            onFilterChange={handleFilterChange}
-          />
+          <SortFilterBar onSortChange={setSortBy} onFilterChange={(cats, tgs) => { setFilterCats(cats); setFilterTags(tgs); }} />
 
-          <DndContext onDragEnd={handleDragEnd}>
+          <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="flex-1 flex space-x-4 overflow-x-auto">
               <Column
                 title="To Do"
                 status="TODO"
                 todos={todosByStatus.TODO}
-                onAddClick={() => handleAddTask("TODO")}
+                onAddClick={() => setModal({ type: "addTask", status: "TODO" })}
               />
               <Column
                 title="In Progress"
                 status="IN_PROGRESS"
                 todos={todosByStatus.IN_PROGRESS}
-                onAddClick={() => handleAddTask("IN_PROGRESS")}
+                onAddClick={() => setModal({ type: "addTask", status: "IN_PROGRESS" })}
               />
               <Column
                 title="Completed"
                 status="COMPLETED"
                 todos={todosByStatus.COMPLETED}
-                onAddClick={() => handleAddTask("COMPLETED")}
+                onAddClick={() => setModal({ type: "addTask", status: "COMPLETED" })}
               />
             </div>
+            <DragOverlay>{activeTodo && <TaskCard todo={activeTodo} />}</DragOverlay>
           </DndContext>
         </div>
 
         <div className="w-1/3 border-l border-gray-200 p-4 overflow-y-auto">
           <CategoriesPanel
             categories={categories}
-            onEdit={handleEditCategory}
-            onDelete={handleDeleteCategory}
+            onEdit={(id) => setModal({ type: "editCategory", categoryId: id })}
+            onDelete={async (id) => { await deleteCategory(id); void loadAllData(); }}
             refreshCategories={() => void loadAllData()}
           />
           <div className="mt-6">
-            <button
-              onClick={handleAddCategory}
-              className="flex items-center text-primary hover:text-primary-dark"
-            >
+            <button onClick={() => setModal({ type: "addCategory" })} className="flex items-center text-primary hover:text-primary-dark">
               + Add Category
             </button>
           </div>
@@ -193,7 +163,7 @@ export default function DashboardPage({
       {modal?.type === "addCategory" && (
         <CategoryModal
           mode="create"
-          onSave={async (name: string, color: string) => {
+          onSave={async (name, color) => {
             await createCategory(name, color);
             void loadAllData();
           }}
@@ -205,7 +175,7 @@ export default function DashboardPage({
         <CategoryModal
           mode="edit"
           categoryId={modal.categoryId}
-          onSave={async (name: string, color: string) => {
+          onSave={async (name, color) => {
             await updateCategory(modal.categoryId, name, color);
             void loadAllData();
             closeModal();
@@ -251,7 +221,8 @@ export default function DashboardPage({
             closeModal();
           }}
           onDelete={async () => {
-            await handleDeleteTask(modal.todo.id);
+            await apiDeleteTodo(modal.todo.id);
+            void loadAllData();
             closeModal();
           }}
           onClose={closeModal}
@@ -261,7 +232,7 @@ export default function DashboardPage({
       {modal?.type === "addTag" && (
         <TagModal
           mode="create"
-          onSave={async (name: string) => {
+          onSave={async (name) => {
             await createTag(name);
             void loadAllData();
             closeModal();

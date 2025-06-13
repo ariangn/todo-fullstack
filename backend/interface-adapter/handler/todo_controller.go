@@ -110,7 +110,6 @@ func (tc *TodoController) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("userID: %s\n", userID)
 	todos, err := tc.listUC.Execute(r.Context(), userID)
 	if err != nil {
 		log.Printf("error in listUC.Execute: %v\n", err)
@@ -275,13 +274,15 @@ func (tc *TodoController) ToggleStatus(w http.ResponseWriter, r *http.Request) {
 		Status string `json:"status"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		log.Printf("Failed to decode body: %v", err)
 		http.Error(w, "invalid request payload", http.StatusBadRequest)
 		return
 	}
-	newStatus := entity.Status(body.Status)
 
+	newStatus := entity.Status(body.Status)
 	updated, err := tc.toggleStatus.Execute(r.Context(), id, newStatus)
 	if err != nil {
+		log.Printf("Failed to toggle status: %v", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -65,7 +65,7 @@ func main() {
 				r.Get("/", container.TodoController.List)
 				r.Get("/{id}", container.TodoController.GetByID)
 				r.Put("/{id}", container.TodoController.Update)
-				r.Put("/{id}/status", container.TodoController.ToggleStatus)
+				r.Patch("/{id}/status", container.TodoController.ToggleStatus)
 				r.Delete("/{id}", container.TodoController.Delete)
 				r.Post("/{id}/duplicate", container.TodoController.Duplicate)
 			})

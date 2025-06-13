@@ -99,6 +99,7 @@ func (r *todoRepository) Update(ctx context.Context, t *entity.Todo) (*entity.To
 	if t.ID == "" {
 		return nil, errors.New("todo ID is required")
 	}
+
 	updates := map[string]interface{}{}
 	if t.Title != "" {
 		updates["title"] = t.Title
@@ -119,22 +120,18 @@ func (r *todoRepository) Update(ctx context.Context, t *entity.Todo) (*entity.To
 		updates["category_id"] = t.CategoryID
 	}
 
-	builder := r.supabase.DB.
+	// Just do the update — don't expect a response
+	_, _, err := r.supabase.DB.
 		From("todos").
-		Update(updates, "*", "").
+		Update(updates, "", ""). // no "*" here since no Prefer header
 		Eq("id", t.ID).
-		Single()
-
-	raw, _, err := builder.Execute()
+		Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	var m model.TodoModel
-	if err := json.Unmarshal(raw, &m); err != nil {
-		return nil, err
-	}
-	return model.ToDomainTodo(&m), nil
+	// Then fetch the updated row manually
+	return r.FindByID(ctx, t.ID)
 }
 
 func (r *todoRepository) Delete(ctx context.Context, id string) error {

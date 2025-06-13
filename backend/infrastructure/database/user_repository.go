@@ -48,10 +48,10 @@ func (r *userRepository) Create(ctx context.Context, u *entity.User) (*entity.Us
 		return nil, errors.New("supabase request failed: no response returned (status 0)")
 	}
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value") {
+			return nil, errors.New("email is already taken")
+		}
 		return nil, err
-	}
-	if strings.Contains(err.Error(), "duplicate key value") {
-		return nil, errors.New("email is already taken")
 	}
 	if status >= 400 {
 		if len(raw) == 0 {

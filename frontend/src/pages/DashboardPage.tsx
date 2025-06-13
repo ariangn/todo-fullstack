@@ -89,7 +89,9 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
       setTodos((prev) =>
         prev.map((t) => (t.id === active.id ? { ...t, status: newStatus } : t))
       );
-      await updateTodoStatus(active.id as string, newStatus);
+      const draggedTodo = todos.find((t) => t.id === active.id);
+      if (!draggedTodo || draggedTodo.status === newStatus) return;
+      await updateTodoStatus(draggedTodo.id, newStatus);  
     } catch (err) {
       console.error("Failed to update status", err);
     }

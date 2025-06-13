@@ -56,18 +56,22 @@ export async function updateTodo(
   return (await res.json()) as Todo;
 }
 
-export async function updateTodoStatus(
-  id: string,
-  status: Todo["status"]
-): Promise<Todo> {
-  const res = await fetch(`/api/todos/${id}/status`, {
-    method: "PUT",
-    credentials: "include",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
+export async function updateTodoStatus(todoId: string, newStatus: "TODO" | "IN_PROGRESS" | "COMPLETED") {
+  const res = await fetch(`/api/todos/${todoId}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    credentials: "include", // ensures session cookies are sent
+    body: JSON.stringify({ status: newStatus }),
   });
-  if (!res.ok) throw new Error("Failed to update status");
-  return (await res.json()) as Todo;
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Failed to update status: ${errorText}`);
+  }
+
+  return await res.json(); // optional: return the updated todo
 }
 
 export async function deleteTodo(id: string): Promise<void> {

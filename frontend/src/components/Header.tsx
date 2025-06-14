@@ -13,8 +13,7 @@ export default function Header({
   return (
     <header className="flex items-center justify-between px-6 py-4 bg-white shadow-sm">
       <Link to="/dashboard" className="flex items-center space-x-2">
-        {/* Placeholder logo */}
-        <img src="/placeholder-logo.svg" alt="Logo" className="h-8 w-8" />
+        <img src="/logo.png" alt="Logo" className="h-8 w-8" />
         <span className="text-xl font-semibold text-gray-800">conquest</span>
       </Link>
 

@@ -47,24 +47,38 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
   const loadAllData = useCallback(async () => {
     let allTodos = await fetchAllTodos();
     if (!Array.isArray(allTodos)) allTodos = [];
-    let filtered = allTodos;
 
+    const allCategories = await fetchCategories();
+    const allTags = await fetchTags();
+
+    // enrich todos with category
+    let enriched = allTodos.map((todo) => {
+      const matchedCat = allCategories.find((cat) => cat.id === todo.categoryId);
+      return {
+        ...todo,
+        category: matchedCat,
+      };
+    });
+
+    // apply filters
     if (filterCats.length) {
-      filtered = filtered.filter((t) => filterCats.includes(t.categoryId || ""));
+      enriched = enriched.filter((t) => filterCats.includes(t.categoryId || ""));
     }
     if (filterTags.length) {
-      filtered = filtered.filter((t) => t.tags.some((tag) => filterTags.includes(tag)));
+      enriched = enriched.filter((t) => t.tags.some((tag) => filterTags.includes(tag)));
     }
 
-    filtered.sort((a, b) => {
+    // sort
+    enriched.sort((a, b) => {
       const aVal = a[sortBy] ? new Date(a[sortBy]!).getTime() : 0;
       const bVal = b[sortBy] ? new Date(b[sortBy]!).getTime() : 0;
       return aVal - bVal;
     });
 
-    setTodos(filtered);
-    setCategories(await fetchCategories());
-    setTags(await fetchTags());
+    // set all state
+    setTodos(enriched);
+    setCategories(allCategories);
+    setTags(allTags);
   }, [sortBy, filterCats, filterTags]);
 
   useEffect(() => {
@@ -119,6 +133,15 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
       />
 
       <div className="flex-1 flex overflow-hidden">
+        <div className="w-1/4 p-4 overflow-y-auto">
+          <CategoriesPanel
+            categories={categories}
+            onEdit={(id) => setModal({ type: "editCategory", categoryId: id })}
+            onDelete={async (id) => { await deleteCategory(id); void loadAllData(); }}
+            refreshCategories={() => void loadAllData()}
+          />
+        </div>
+
         <div className="flex-1 flex flex-col p-6 overflow-hidden">
           <SortFilterBar onSortChange={setSortBy} onFilterChange={(cats, tgs) => { setFilterCats(cats); setFilterTags(tgs); }} />
 
@@ -145,20 +168,6 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
             </div>
             <DragOverlay>{activeTodo && <TaskCard todo={activeTodo} />}</DragOverlay>
           </DndContext>
-        </div>
-
-        <div className="w-1/3 border-l border-gray-200 p-4 overflow-y-auto">
-          <CategoriesPanel
-            categories={categories}
-            onEdit={(id) => setModal({ type: "editCategory", categoryId: id })}
-            onDelete={async (id) => { await deleteCategory(id); void loadAllData(); }}
-            refreshCategories={() => void loadAllData()}
-          />
-          <div className="mt-6">
-            <button onClick={() => setModal({ type: "addCategory" })} className="flex items-center text-primary hover:text-primary-dark">
-              + Add Category
-            </button>
-          </div>
         </div>
       </div>
 

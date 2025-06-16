@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -29,17 +32,37 @@ func NewTagController(
 }
 
 func (tc *TagController) Create(w http.ResponseWriter, r *http.Request) {
-	userID, _ := middleware.GetUserIDFromContext(r.Context())
-	var dto request.CreateTagDTO
-	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		http.Error(w, "invalid request payload", http.StatusBadRequest)
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok || userID == "" {
+		http.Error(w, "unauthorized: user ID not found", http.StatusUnauthorized)
 		return
 	}
+
+	// read and log body safely
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "could not read request body", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+	fmt.Println("RAW BODY:", string(bodyBytes))
+
+	// rewind for decoding
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	var dto request.CreateTagDTO
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		http.Error(w, "invalid request payload: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	fmt.Println("Decoded DTO:", dto)
+
 	tagEntity, err := tc.createUC.Execute(r.Context(), userID, dto.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	respDTO := response.TagResponseDTO{
 		ID:        tagEntity.ID,
 		Name:      tagEntity.Name,

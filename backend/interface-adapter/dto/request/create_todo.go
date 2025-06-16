@@ -3,9 +3,10 @@ package request
 import "time"
 
 type CreateTodoDTO struct {
-    Title      string     `json:"title"`
-    Body       *string    `json:"body,omitempty"`
-    DueDate    *time.Time `json:"dueDate,omitempty"`
-    CategoryID *string    `json:"categoryId,omitempty"`
-    TagIDs     []string   `json:"tagIds,omitempty"`
+	Title      string     `json:"title"`
+	Body       *string    `json:"body"`
+	DueDate    *time.Time `json:"dueDate"`
+	Status     string     `json:"status"`
+	CategoryID *string    `json:"categoryId"`
+	TagIDs     []string   `json:"tagIds"`
 }

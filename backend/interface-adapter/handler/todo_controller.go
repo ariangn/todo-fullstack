@@ -2,7 +2,10 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -48,17 +51,25 @@ func NewTodoController(
 }
 
 func (tc *TodoController) Create(w http.ResponseWriter, r *http.Request) {
+
 	userID, ok := middleware.GetUserIDFromContext(r.Context())
 	if !ok {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
 	}
 
+	bodyBytes, _ := io.ReadAll(r.Body)
+	fmt.Println("RAW TODO BODY:", string(bodyBytes))
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // rewind for decoding
+
 	var dto request.CreateTodoDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
-		http.Error(w, "invalid request payload", http.StatusBadRequest)
+		log.Println("❌ Failed to decode todo DTO:", err)
+		http.Error(w, "invalid request", http.StatusBadRequest)
 		return
 	}
+
+	fmt.Printf("CONTROLLER DECODED DTO: %+v\n", dto)
 
 	// Convert dueDate to valueobject.DueDateVO if provided
 	var dueDateVO *valueobject.DueDateVO
@@ -76,11 +87,13 @@ func (tc *TodoController) Create(w http.ResponseWriter, r *http.Request) {
 		userID,
 		dto.Title,
 		dto.Body,
+		entity.Status(dto.Status),
 		dueDateVO,
 		dto.CategoryID,
 		dto.TagIDs,
 	)
 	if err != nil {
+		log.Printf("❌ Usecase CreateTodo error: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

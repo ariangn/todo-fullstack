@@ -30,14 +30,15 @@ interface TaskModalProps {
   status?: Todo["status"];
   todo?: Todo;
   categories: Category[];
-  tags: string[];  
+  tagIds: string[];  
+  createTag: (name: string) => Promise<{ id: string; name: string }>;
   onSave: (data: {
     title: string;
     body?: string;
     dueDate?: string;
     status: Todo["status"];
     categoryId?: string;
-    tags: string[];
+    tagIds: string[];
   }) => Promise<void>;
   onDelete?: () => Promise<void>;
   onClose: () => void;
@@ -48,6 +49,7 @@ export default function TaskModal({
   status,
   todo,
   categories,
+  createTag,
   onSave,
   onDelete,
   onClose,
@@ -61,7 +63,7 @@ export default function TaskModal({
     todo?.categoryId ?? undefined
   );
   const [tagInput, setTagInput] = useState<string>("");
-  const [selectedTags, setSelectedTags] = useState<string[]>(todo?.tags || []);
+  const [selectedTags, setSelectedTags] = useState<string[]>(todo?.tagIds || []);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -75,7 +77,7 @@ export default function TaskModal({
       setBody(todo.body || "");
       setDueDate(todo.dueDate ? new Date(todo.dueDate) : undefined);
       setCategoryId(todo.categoryId || "");
-      setSelectedTags(todo.tags);
+      setSelectedTags(todo.tagIds);
     }
   }, [mode, todo, categories]);
 
@@ -97,25 +99,27 @@ export default function TaskModal({
       setError("Title is required");
       return;
     }
+
     setError(null);
     setLoading(true);
-    // console.log("Submitting task:", {
-    //   title,
-    //   body,
-    //   dueDate: dueDate ? dueDate.toISOString() : undefined,
-    //   status: mode === "create" ? status! : todo!.status,
-    //   categoryId,
-    //   tags: selectedTags,
-    // });
+
     try {
+      const tagIds: string[] = [];
+      console.log("selectedTags:", selectedTags);
+      for (const tagName of selectedTags) {
+        const tag = await createTag(tagName); // create or get existing
+        tagIds.push(tag.id);
+      }
+
       await onSave({
         title: title.trim(),
         body: body.trim() || undefined,
         dueDate: dueDate ? dueDate.toISOString() : undefined,
         status: mode === "create" ? status! : todo!.status,
         categoryId: categoryId !== "none" ? categoryId : undefined,
-        tags: selectedTags,
+        tagIds: tagIds,
       });
+
       onClose();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -124,6 +128,7 @@ export default function TaskModal({
       setLoading(false);
     }
   };
+
 
   const handleDelete = async () => {
     if (onDelete) {

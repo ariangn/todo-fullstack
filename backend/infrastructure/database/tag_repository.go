@@ -20,29 +20,51 @@ func NewTagRepository(supabase *SupabaseClient) repository.TagRepository {
 	return &tagRepository{supabase}
 }
 
-func (r *tagRepository) Create(ctx context.Context, t *entity.Tag) (*entity.Tag, error) {
-	t.ID = uuid.NewString()
-	toInsert := map[string]interface{}{
-		"id":      t.ID,
-		"name":    t.Name,
-		"user_id": t.UserID,
-	}
-
+func (r *tagRepository) FindByName(ctx context.Context, userID string, name string) (*entity.Tag, error) {
 	builder := r.supabase.DB.
 		From("tags").
-		Insert(toInsert, false, "", "*", "").
+		Select("*", "", false).
+		Eq("user_id", userID).
+		Eq("name", name).
 		Single()
 
 	raw, _, err := builder.Execute()
 	if err != nil {
-		return nil, err
+		// not found is not a fatal error
+		return nil, nil
 	}
 
 	var m model.TagModel
 	if err := json.Unmarshal(raw, &m); err != nil {
 		return nil, err
 	}
+
 	return model.ToDomainTag(&m), nil
+}
+
+func (r *tagRepository) Create(ctx context.Context, t *entity.Tag) (*entity.Tag, error) {
+	if t == nil {
+		return nil, errors.New("tag entity is required")
+	}
+	id := t.ID
+	if id == "" {
+		id = uuid.NewString()
+	}
+	insert := map[string]interface{}{
+		"id":      id,
+		"user_id": t.UserID,
+		"name":    t.Name,
+	}
+
+	_, _, err := r.supabase.DB.
+		From("tags").
+		Insert(insert, false, "", "", ""). // ← don't expect any data back
+		Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	return t, nil
 }
 
 func (r *tagRepository) FindByID(ctx context.Context, id string) (*entity.Tag, error) {

@@ -4,7 +4,8 @@ export type Todo = {
   body?: string;
   status: "TODO" | "IN_PROGRESS" | "COMPLETED";
   dueDate?: string;
-  tags: string[];
+  tagIds: string[];
+  tags?: string[];
   categoryId?: string;
   category?: { id: string; color: string; name: string };
   createdAt: string;
@@ -23,7 +24,7 @@ export async function createTodo(data: {
   dueDate?: string;
   status: Todo["status"];
   categoryId?: string;
-  tags: string[];
+  tagIds: string[];
 }): Promise<Todo> {
   const res = await fetch("/api/todos", {
     method: "POST",
@@ -43,7 +44,7 @@ export async function updateTodo(
     dueDate?: string;
     status: Todo["status"];
     categoryId?: string;
-    tags: string[];
+    tagIds: string[];
   }>
 ): Promise<Todo> {
   const res = await fetch(`/api/todos/${id}`, {

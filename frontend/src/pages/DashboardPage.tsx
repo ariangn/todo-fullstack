@@ -53,10 +53,25 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
 
     // enrich todos with category
     let enriched = allTodos.map((todo) => {
+      if (!todo || typeof todo !== "object") {
+        console.error("Bad todo:", todo);
+      }
       const matchedCat = allCategories.find((cat) => cat.id === todo.categoryId);
+      const matchedTags = Array.isArray(todo.tagIds)
+      ? todo.tagIds
+          .map((tagId) => allTags.find((t) => t.id === tagId))
+          .filter((tag): tag is Tag => Boolean(tag))
+      : [];
+      const tagNames = matchedTags
+        .map((tag) => tag?.name)
+        .filter((name): name is string => Boolean(name && name.trim()));
+      if (!Array.isArray(tagNames)) {
+        console.error("Tag names is not array:", tagNames);
+      }
       return {
         ...todo,
         category: matchedCat,
+        tags: tagNames,
       };
     });
 
@@ -65,7 +80,9 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
       enriched = enriched.filter((t) => filterCats.includes(t.categoryId || ""));
     }
     if (filterTags.length) {
-      enriched = enriched.filter((t) => t.tags.some((tag) => filterTags.includes(tag)));
+      enriched = enriched.filter((t) =>
+        Array.isArray(t.tags) && t.tags.some((tag) => filterTags.includes(tag))
+      );
     }
 
     // sort
@@ -200,19 +217,22 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
           mode="create"
           status={modal.status}
           categories={categories}
-          tags={(tags ?? []).map((t) => t.name)}
+          tagIds={(tags ?? []).map((t) => t.id)}
+          createTag={createTag}
           onSave={async (data) => {
             await fetch("/api/todos", {
               method: "POST",
               credentials: "include",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(data),
+              body: JSON.stringify(data), // ← already has tag IDs
             });
+
             void loadAllData();
             closeModal();
           }}
           onClose={closeModal}
         />
+
       )}
 
       {modal?.type === "editTask" && modal.todo && (
@@ -220,7 +240,8 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
           mode="edit"
           todo={modal.todo}
           categories={categories}
-          tags={tags.map((t) => t.name)}
+          tagIds={tags.map((t) => t.name)}
+          createTag={createTag}
           onSave={async (data) => {
             await fetch(`/api/todos/${modal.todo.id}`, {
               method: "PUT",

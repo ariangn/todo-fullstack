@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/google/uuid"
 
@@ -32,24 +33,35 @@ func (r *todoRepository) Create(ctx context.Context, t *entity.Todo) (*entity.To
 		"completed_at": t.CompletedAt,
 		"user_id":      t.UserID,
 		"category_id":  t.CategoryID,
-		// Note: we do not insert TagIDs here; handle tags via a separate join if needed
 	}
 
-	builder := r.supabase.DB.
+	// Step 1: Insert todo using return=minimal (no unmarshalling needed)
+	_, _, err := r.supabase.DB.
 		From("todos").
-		Insert(toInsert, false, "", "*", "").
-		Single()
-
-	raw, _, err := builder.Execute()
+		Insert(toInsert, false, "", "minimal", ""). // ← use return=minimal
+		Single().
+		Execute()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to insert todo: %w", err)
 	}
 
-	var m model.TodoModel
-	if err := json.Unmarshal(raw, &m); err != nil {
-		return nil, err
+	// Step 2: Insert into todo_tags
+	for _, tagID := range t.TagIDs {
+		join := map[string]interface{}{
+			"todo_id": t.ID,
+			"tag_id":  tagID,
+		}
+		_, _, err := r.supabase.DB.
+			From("todo_tags").
+			Insert(join, false, "", "minimal", ""). // also minimal here
+			Execute()
+		if err != nil {
+			return nil, fmt.Errorf("failed to insert todo_tag: %w", err)
+		}
 	}
-	return model.ToDomainTodo(&m), nil
+
+	// Step 3: Return the original entity
+	return t, nil
 }
 
 func (r *todoRepository) FindByID(ctx context.Context, id string) (*entity.Todo, error) {
@@ -120,17 +132,42 @@ func (r *todoRepository) Update(ctx context.Context, t *entity.Todo) (*entity.To
 		updates["category_id"] = t.CategoryID
 	}
 
-	// Just do the update — don't expect a response
+	// Update todo
 	_, _, err := r.supabase.DB.
 		From("todos").
-		Update(updates, "", ""). // no "*" here since no Prefer header
+		Update(updates, "", "").
 		Eq("id", t.ID).
 		Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	// Then fetch the updated row manually
+	// Remove existing tag relations
+	_, _, err = r.supabase.DB.
+		From("todo_tags").
+		Delete("", "").
+		Eq("todo_id", t.ID).
+		Execute()
+	if err != nil {
+		return nil, err
+	}
+
+	// Insert updated tag relations
+	for _, tagID := range t.TagIDs {
+		join := map[string]interface{}{
+			"todo_id": t.ID,
+			"tag_id":  tagID,
+		}
+		_, _, err := r.supabase.DB.
+			From("todo_tags").
+			Insert(join, false, "", "", "").
+			Execute()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Fetch updated todo
 	return r.FindByID(ctx, t.ID)
 }
 

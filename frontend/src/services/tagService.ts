@@ -10,7 +10,6 @@ export async function fetchTags(): Promise<Tag[]> {
 }
 
 export async function createTag(name: string): Promise<Tag> {
-  console.log("Creating tag with name:", name);
   const res = await fetch("/api/tags", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

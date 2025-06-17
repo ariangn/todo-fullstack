@@ -71,6 +71,7 @@ export default function TaskModal({
   const [selectedTags, setSelectedTags] = useState<
     { id: string; name: string }[]
   >([]);
+  const [tagError, setTagError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,18 +98,25 @@ export default function TaskModal({
 
   const handleAddTag = async () => {
     const raw = tagInput.trim();
-    if (!raw) return;
-    // if already chosen, skip
-    if (selectedTags.some((t) => t.name === raw)) {
-      setTagInput("");
+    // 1) Validate non-empty
+    if (!raw) {
+      setTagError("Tag cannot be empty");
       return;
     }
+    // 2) Validate no duplicates
+    if (selectedTags.some((t) => t.name.toLowerCase() === raw.toLowerCase())) {
+      setTagError(`"${raw}" is already added`);
+      return;
+    }
+
+    setTagError(null);
     setLoading(true);
     try {
       const tag = await createTag(raw);
       setSelectedTags((prev) => [...prev, tag]);
     } catch (e) {
       console.error("Failed to create/tag:", e);
+      setTagError("Failed to add tag");
     } finally {
       setLoading(false);
       setTagInput("");
@@ -226,7 +234,7 @@ export default function TaskModal({
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
-              <SelectContent className="bg-white">
+              <SelectContent className="">
                 <SelectItem value="none">None</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
@@ -244,7 +252,10 @@ export default function TaskModal({
               <div className="flex space-x-2">
                 <Input
                   value={tagInput}
-                  onChange={(e) => setTagInput(e.target.value)}
+                  onChange={(e) => {
+                    setTagInput(e.target.value);
+                    if (tagError) setTagError(null);
+                  }}
                   placeholder="Add a tag"
                   className="flex-1 h-8"
                 />
@@ -252,6 +263,10 @@ export default function TaskModal({
                   +
                 </Button>
               </div>
+              {/* show tag-specific error */}
+              {tagError && (
+                <p className="text-red-500 text-xs">{tagError}</p>
+              )}
               <div className="flex flex-wrap gap-2">
                 {selectedTags.map((t) => (
                   <Badge
@@ -287,7 +302,7 @@ export default function TaskModal({
               Delete
             </Button>
           )}
-          <Button onClick={handleSave} disabled={loading}>
+          <Button variant="outline" onClick={handleSave} disabled={loading}>
             {loading ? "Saving…" : "Save"}
           </Button>
         </DialogFooter>

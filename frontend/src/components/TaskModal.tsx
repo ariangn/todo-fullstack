@@ -6,6 +6,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -147,11 +148,14 @@ export default function TaskModal({
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg bg-white">
         <DialogHeader>
           <DialogTitle>
             {mode === "create" ? "New Task" : "Edit Task"}
           </DialogTitle>
+          <DialogDescription>
+            Fill out the details of your task below.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">

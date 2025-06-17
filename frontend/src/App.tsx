@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import DashboardPage from "./pages/DashboardPage";
@@ -10,7 +10,7 @@ import {
   logout as logoutService,
 } from "./services/authService";
 
-// Our frontend “User” type must have required fields (id, email, name)
+// user type
 type User = {
   id: string;
   email: string;
@@ -18,25 +18,16 @@ type User = {
   avatarUrl?: string;
 };
 
-function AppRouter() {
-  const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // check if user is already logged in via cookie
     (async () => {
-      // Skip auth check on public pages
-      if (
-        window.location.pathname === "/login" ||
-        window.location.pathname === "/signup"
-      ) {
-        setLoading(false);
-        return;
-      }
-
       try {
         const fetched = await getUserFromCookie();
-        if (fetched !== null) {
+        if (fetched) {
           setUser({
             id: fetched.id,
             email: fetched.email!,
@@ -46,26 +37,15 @@ function AppRouter() {
         } else {
           setUser(null);
         }
-        setLoading(false);
-
-        // Redirect logged-in users away from public pages
-        if (
-          window.location.pathname === "/login" ||
-          window.location.pathname === "/signup"
-        ) {
-          navigate("/dashboard", { replace: true });
-        }
       } catch {
         setUser(null);
+      } finally {
         setLoading(false);
-        navigate("/login", { replace: true });
       }
     })();
-  }, [navigate]);
+  }, []);
 
-  if (loading) return <div>Loading…</div>;
-
-  // LoginPage’s onLogin signature is (email: string, password: string) => void
+  // auth handlers
   async function handleLogin(email: string, password: string) {
     const loggedIn = await loginService(email, password);
     setUser({
@@ -74,10 +54,8 @@ function AppRouter() {
       name: loggedIn.name || "",
       avatarUrl: loggedIn.avatarUrl,
     });
-    navigate("/dashboard", { replace: true });
   }
 
-  // SignupPage’s onSignup signature is (email: string, password: string, name: string, timezone: string, avatarUrl?: string) => void
   async function handleSignup(
     email: string,
     password: string,
@@ -85,60 +63,52 @@ function AppRouter() {
     timezone: string,
     avatarUrl?: string
   ) {
-    const signedUp = await signupService(
-      email,
-      password,
-      name,
-      timezone,
-      avatarUrl
-    );
+    const signedUp = await signupService(email, password, name, timezone, avatarUrl);
     setUser({
       id: signedUp.id,
       email: signedUp.email!,
       name: signedUp.name || "",
       avatarUrl: signedUp.avatarUrl,
     });
-    navigate("/dashboard", { replace: true });
   }
 
   async function handleLogout() {
     await logoutService();
     setUser(null);
-    navigate("/login", { replace: true });
   }
 
-  return (
-    <Routes>
-      <Route
-        path="/login"
-        element={<LoginPage onLogin={handleLogin} />}
-      />
-      <Route
-        path="/signup"
-        element={<SignupPage onSignup={handleSignup} />}
-      />
-      <Route
-        path="/dashboard"
-        element={
-          user ? (
-            <DashboardPage user={user} onLogout={handleLogout} />
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="*"
-        element={<Navigate to={user ? "/dashboard" : "/login"} replace />}
-      />
-    </Routes>
-  );
-}
+  if (loading) return <div>Loading…</div>;
 
-export default function App() {
   return (
     <BrowserRouter>
-      <AppRouter />
+      <Routes>
+        <Route
+          path="/login"
+          element={
+            user ? <Navigate to="/dashboard" replace /> : <LoginPage onLogin={handleLogin} />
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            user ? <Navigate to="/dashboard" replace /> : <SignupPage onSignup={handleSignup} />
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            user ? (
+              <DashboardPage user={user} onLogout={handleLogout} />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="*"
+          element={<Navigate to={user ? "/dashboard" : "/login"} replace />}
+        />
+      </Routes>
     </BrowserRouter>
   );
 }

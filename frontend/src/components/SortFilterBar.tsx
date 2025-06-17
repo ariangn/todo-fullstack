@@ -67,7 +67,7 @@ export default function SortFilterBar({
           <SelectValue placeholder="Sort by" />
           <ChevronDownIcon className="ml-auto h-4 w-4" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="bg-white">
           <SelectItem value="dueDate">Due Date</SelectItem>
           <SelectItem value="createdAt">Date Created</SelectItem>
           <SelectItem value="updatedAt">Date Updated</SelectItem>
@@ -82,7 +82,7 @@ export default function SortFilterBar({
             <ChevronDownIcon className="h-4 w-4 ml-1" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-64">
+        <DropdownMenuContent className="w-64 bg-white">
           <DropdownMenuLabel className="font-medium">Categories</DropdownMenuLabel>
           <DropdownMenuGroup>
             {(categories ?? []).map((cat) => (

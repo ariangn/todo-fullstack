@@ -105,6 +105,8 @@ func (uc *UserController) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
+		Secure:   os.Getenv("ENV") == "production", // HTTPS only in prod
+		SameSite: http.SameSiteLaxMode,
 		MaxAge:   -1,
 	})
 	w.WriteHeader(http.StatusOK)

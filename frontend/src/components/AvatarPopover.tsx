@@ -12,30 +12,31 @@ export default function AvatarPopover({
   userName: string;
   onLogout: () => void;
 }) {
-  // If no avatar URL, pick a consistent color based on userName
-  const bgColor = avatarUrl ? "bg-transparent" : randomColorFromString(userName);
+  const bgColor = avatarUrl ? "bg-transparent" : randomColorFromString(userName); // e.g. "bg-red-500"
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <div
-          className={`h-10 w-10 rounded-full flex items-center justify-center text-white cursor-pointer ${bgColor}`}
+          className={`h-10 w-10 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center ${bgColor}`}
         >
           {avatarUrl ? (
-            <img src={avatarUrl} alt="Avatar" className="h-10 w-10 rounded-full object-cover" />
+            <img
+              src={avatarUrl}
+              alt="Avatar"
+              className="h-full w-full object-cover"
+            />
           ) : (
-            <User2Icon className="h-6 w-6" />
+            <User2Icon className="h-6 w-6 text-white" />
           )}
         </div>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-32 p-2">
+      <PopoverContent align="end" className="w-32 p-2 bg-white">
         <Button
           variant="ghost"
           size="sm"
           className="w-full justify-start space-x-2"
-          onClick={() => {
-            onLogout();
-          }}
+          onClick={onLogout}
         >
           <LogOutIcon className="h-4 w-4" />
           <span>Sign Out</span>

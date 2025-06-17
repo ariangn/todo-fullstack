@@ -11,14 +11,12 @@ interface ColumnProps {
   title: string;
   status: "TODO" | "IN_PROGRESS" | "COMPLETED";
   todos: Todo[];
-  onAddClick: () => void;
 }
 
 export default function Column({
   title,
   status,
   todos,
-  onAddClick,
 }: ColumnProps) {
   const { isOver, setNodeRef: setDroppableRef } = useDroppable({
     id: status,
@@ -37,12 +35,6 @@ export default function Column({
           <DraggableTaskCard key={todo.id} todo={todo} />
         ))}
       </div>
-      <button
-        onClick={onAddClick}
-        className="mt-2 flex items-center justify-center text-primary hover:text-primary-dark"
-      >
-        + Add Task
-      </button>
     </div>
   );
 }

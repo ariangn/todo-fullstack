@@ -27,6 +27,7 @@ export default function CategoriesPanel({
   onDelete,
   refreshCategories,
 }: CategoriesPanelProps) {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [newName, setNewName] = useState<string>("");
   const [newColor, setNewColor] = useState<string>("#D69E2E");
   const [loading, setLoading] = useState<boolean>(false);
@@ -65,7 +66,7 @@ export default function CategoriesPanel({
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex-1 overflow-y-auto">
+      <CardContent className="flex-1 overflow-y-auto bg-white">
         <ul className="space-y-2 mb-4">
           {(categories ?? []).map((cat) => (
             <li
@@ -90,7 +91,7 @@ export default function CategoriesPanel({
         </ul>
 
         <div className="flex justify-center">
-          <Popover>
+          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
             <PopoverTrigger asChild>
               <Button
                 id="add-cat-trigger"
@@ -101,7 +102,7 @@ export default function CategoriesPanel({
               </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto p-4">
+            <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto p-4 bg-white">
               <div className="space-y-4">
                 <h4 className="text-lg font-medium">New Category</h4>
 
@@ -139,12 +140,12 @@ export default function CategoriesPanel({
                       setNewName("");
                       setNewColor("#D69E2E");
                       setError(null);
-                      document.getElementById("add-cat-trigger")?.blur();
+                      setIsPopoverOpen(false);
                     }}
                   >
                     Cancel
                   </Button>
-                  <Button size="sm" onClick={handleCreate} disabled={loading}>
+                  <Button size="sm" variant="outline" onClick={handleCreate} disabled={loading}>
                     {loading ? "Saving…" : "Save"}
                   </Button>
                 </div>

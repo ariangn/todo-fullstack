@@ -25,6 +25,8 @@ import CategoryModal from "../components/CategoryModal";
 import TaskModal from "../components/TaskModal";
 import TagModal from "../components/TagModal";
 import TaskCard from "../components/TaskCard";
+import { Button } from "@/components/ui/button";
+import { PlusIcon } from "lucide-react";
 
 export default function DashboardPage({ user, onLogout }: { user: User; onLogout: () => void }) {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -160,27 +162,38 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
         </div>
 
         <div className="flex-1 flex flex-col p-6 overflow-hidden">
-          <SortFilterBar onSortChange={setSortBy} onFilterChange={(cats, tgs) => { setFilterCats(cats); setFilterTags(tgs); }} />
-
+          <div className="flex items-center justify-between mb-4">
+            <SortFilterBar
+              onSortChange={setSortBy}
+              onFilterChange={(cats, tgs) => {
+                setFilterCats(cats);
+                setFilterTags(tgs);
+              }}
+            />
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setModal({ type: "addTask", status: "TODO" })}
+            >
+              <PlusIcon className="h-5 w-5 mr-1" /> Add New Task
+            </Button>
+          </div>
           <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
             <div className="flex-1 flex space-x-4 overflow-x-auto">
               <Column
                 title="To Do"
                 status="TODO"
                 todos={todosByStatus.TODO}
-                onAddClick={() => setModal({ type: "addTask", status: "TODO" })}
               />
               <Column
                 title="In Progress"
                 status="IN_PROGRESS"
                 todos={todosByStatus.IN_PROGRESS}
-                onAddClick={() => setModal({ type: "addTask", status: "IN_PROGRESS" })}
               />
               <Column
                 title="Completed"
                 status="COMPLETED"
                 todos={todosByStatus.COMPLETED}
-                onAddClick={() => setModal({ type: "addTask", status: "COMPLETED" })}
               />
             </div>
             <DragOverlay>{activeTodo && <TaskCard todo={activeTodo} />}</DragOverlay>

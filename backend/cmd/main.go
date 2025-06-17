@@ -50,6 +50,7 @@ func main() {
 		// Public routes
 		r.Post("/users/register", container.UserController.Register)
 		r.Post("/users/login", container.UserController.Login)
+		r.Post("/users/logout", container.UserController.Logout)
 
 		// Protected routes
 		r.Group(func(r chi.Router) {
@@ -57,7 +58,6 @@ func main() {
 
 			// Auth info
 			r.Get("/auth/me", container.UserController.Me)
-			r.Post("/users/logout", container.UserController.Logout)
 
 			// Todos
 			r.Route("/todos", func(r chi.Router) {

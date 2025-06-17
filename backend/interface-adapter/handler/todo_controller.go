@@ -4,7 +4,6 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -59,7 +58,7 @@ func (tc *TodoController) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bodyBytes, _ := io.ReadAll(r.Body)
-	fmt.Println("RAW TODO BODY:", string(bodyBytes))
+	// fmt.Println("RAW TODO BODY:", string(bodyBytes))
 	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // rewind for decoding
 
 	var dto request.CreateTodoDTO
@@ -69,7 +68,7 @@ func (tc *TodoController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Printf("CONTROLLER DECODED DTO: %+v\n", dto)
+	// fmt.Printf("CONTROLLER DECODED DTO: %+v\n", dto)
 
 	// Convert dueDate to valueobject.DueDateVO if provided
 	var dueDateVO *valueobject.DueDateVO

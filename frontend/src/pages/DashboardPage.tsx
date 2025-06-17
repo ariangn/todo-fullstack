@@ -184,16 +184,22 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
                 title="To Do"
                 status="TODO"
                 todos={todosByStatus.TODO}
+                setModal={setModal}
+                loadAllData={loadAllData}
               />
               <Column
                 title="In Progress"
                 status="IN_PROGRESS"
                 todos={todosByStatus.IN_PROGRESS}
+                setModal={setModal}
+                loadAllData={loadAllData}
               />
               <Column
                 title="Completed"
                 status="COMPLETED"
                 todos={todosByStatus.COMPLETED}
+                setModal={setModal}
+                loadAllData={loadAllData}
               />
             </div>
             <DragOverlay>{activeTodo && <TaskCard todo={activeTodo} />}</DragOverlay>
@@ -230,7 +236,7 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
           mode="create"
           status={modal.status}
           categories={categories}
-          tagIds={(tags ?? []).map((t) => t.id)}
+          allTags={tags}
           createTag={createTag}
           onSave={async (data) => {
             await fetch("/api/todos", {
@@ -253,7 +259,7 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
           mode="edit"
           todo={modal.todo}
           categories={categories}
-          tagIds={tags.map((t) => t.name)}
+          allTags={tags}
           createTag={createTag}
           onSave={async (data) => {
             await fetch(`/api/todos/${modal.todo.id}`, {

@@ -83,7 +83,7 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
     }
     if (filterTags.length) {
       enriched = enriched.filter((t) =>
-        Array.isArray(t.tags) && t.tags.some((tag) => filterTags.includes(tag))
+        Array.isArray(t.tagIds) && t.tagIds.some((id) => filterTags.includes(id))
       );
     }
 

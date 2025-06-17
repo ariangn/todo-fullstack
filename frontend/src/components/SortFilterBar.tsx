@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+// src/components/SortFilterBar.tsx
+import { useEffect, useState, useMemo } from "react";
 import {
   Select,
   SelectTrigger,
@@ -20,7 +21,6 @@ import { ChevronDownIcon, FilterIcon } from "lucide-react";
 import { fetchCategories } from "../services/categoryService";
 import { fetchTags } from "../services/tagService";
 
-// Define a union type for the allowed sort keys:
 type SortKey = "dueDate" | "createdAt" | "updatedAt";
 
 export default function SortFilterBar({
@@ -33,36 +33,54 @@ export default function SortFilterBar({
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
   const [selectedCats, setSelectedCats] = useState<string[]>([]);
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedTagNames, setSelectedTagNames] = useState<string[]>([]);
 
+  // Fetch once
   useEffect(() => {
-    fetchCategories().then((cats) => setCategories(cats));
-    fetchTags().then((t) => setTags(t));
+    fetchCategories().then(setCategories);
+    fetchTags().then(setTags);
   }, []);
 
+  // Build a map: tagName → [tagId, ...]
+  const nameToIds = useMemo(() => {
+    const m = new Map<string, string[]>();
+    tags.forEach(({ id, name }) => {
+      const arr = m.get(name) ?? [];
+      arr.push(id);
+      m.set(name, arr);
+    });
+    return m;
+  }, [tags]);
+
+  // Unique list of names for the UI
+  const uniqueNames = useMemo(() => Array.from(nameToIds.keys()), [nameToIds]);
+
+  // toggle a category, then call parent
   const toggleCategory = (id: string) => {
     const updated = selectedCats.includes(id)
       ? selectedCats.filter((x) => x !== id)
       : [...selectedCats, id];
     setSelectedCats(updated);
-    onFilterChange(updated, selectedTags);
+    onFilterChange(updated, flattenTagIds(selectedTagNames));
   };
 
-  const toggleTag = (id: string) => {
-    const updated = selectedTags.includes(id)
-      ? selectedTags.filter((x) => x !== id)
-      : [...selectedTags, id];
-    setSelectedTags(updated);
-    onFilterChange(selectedCats, updated);
+  // toggle a tag name, then call parent
+  const toggleTagName = (name: string) => {
+    const updatedNames = selectedTagNames.includes(name)
+      ? selectedTagNames.filter((x) => x !== name)
+      : [...selectedTagNames, name];
+    setSelectedTagNames(updatedNames);
+    onFilterChange(selectedCats, flattenTagIds(updatedNames));
   };
+
+  function flattenTagIds(names: string[]) {
+    return names.flatMap((n) => nameToIds.get(n) ?? []);
+  }
 
   return (
     <div className="flex items-center space-x-4 mb-4">
-      <Select
-        onValueChange={(v: string) =>
-          onSortChange(v as SortKey)
-        }
-      >
+      {/* Sort dropdown */}
+      <Select onValueChange={(v) => onSortChange(v as SortKey)}>
         <SelectTrigger className="w-44">
           <SelectValue placeholder="Sort by" />
           <ChevronDownIcon className="ml-auto h-4 w-4" />
@@ -74,6 +92,7 @@ export default function SortFilterBar({
         </SelectContent>
       </Select>
 
+      {/* Filter menu */}
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" className="flex items-center space-x-2">
@@ -83,9 +102,10 @@ export default function SortFilterBar({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64 bg-white">
+          {/* Categories */}
           <DropdownMenuLabel className="font-medium">Categories</DropdownMenuLabel>
           <DropdownMenuGroup>
-            {(categories ?? []).map((cat) => (
+            {categories.map((cat) => (
               <DropdownMenuItem
                 key={cat.id}
                 className="flex items-center space-x-2"
@@ -101,22 +121,25 @@ export default function SortFilterBar({
               </DropdownMenuItem>
             ))}
           </DropdownMenuGroup>
+
           <DropdownMenuSeparator />
+
+          {/* Tags (deduped by name) */}
           <DropdownMenuLabel className="font-medium">Tags</DropdownMenuLabel>
           <DropdownMenuGroup>
-            {(tags ?? []).map((tg) => (
+            {uniqueNames.map((name) => (
               <DropdownMenuItem
-                key={tg.id}
+                key={name}
                 className="flex items-center space-x-2"
-                onClick={() => toggleTag(tg.id)}
+                onClick={() => toggleTagName(name)}
               >
                 <input
                   type="checkbox"
-                  checked={selectedTags.includes(tg.id)}
+                  checked={selectedTagNames.includes(name)}
                   readOnly
                   className="form-checkbox h-4 w-4 text-primary"
                 />
-                <span>{tg.name}</span>
+                <span>{name}</span>
               </DropdownMenuItem>
             ))}
           </DropdownMenuGroup>

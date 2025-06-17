@@ -1,7 +1,10 @@
 package handler
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -84,8 +87,69 @@ func (cc *CategoryController) List(w http.ResponseWriter, r *http.Request) {
 }
 
 func (cc *CategoryController) Update(w http.ResponseWriter, r *http.Request) {
-	// similar to Create/Update in Todo
-	w.WriteHeader(http.StatusNotImplemented)
+	w.Header().Set("Content-Type", "application/json")
+
+	raw, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Printf("DEBUG: could not read body: %v", err)
+	}
+	// restore r.Body for the rest of the handler
+	r.Body = io.NopCloser(bytes.NewBuffer(raw))
+
+	// 1) auth
+	userID, ok := middleware.GetUserIDFromContext(r.Context())
+	if !ok {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(map[string]string{"error": "unauthorized"})
+		return
+	}
+
+	// 2) path param
+	id := chi.URLParam(r, "id")
+
+	// 3) ensure body wasn’t empty
+	if len(raw) == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "request body was empty"})
+		return
+	}
+
+	// 4) decode into DTO
+	var dto request.UpdateCategoryDTO
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid JSON: " + err.Error()})
+		return
+	}
+
+	// 5) execute update use-case
+	updatedEntity, err := cc.updateUC.Execute(
+		r.Context(),
+		userID,
+		id,
+		getString(dto.Name),
+		getString(dto.Color),
+		getString(dto.Description),
+	)
+	if err != nil {
+		log.Printf("DEBUG: updateUC.Execute returned error: %v", err)
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	// 6) success response
+	respDTO := response.CategoryResponseDTO{
+		ID:          updatedEntity.ID,
+		Name:        updatedEntity.Name,
+		Color:       updatedEntity.Color,
+		Description: updatedEntity.Description,
+		UserID:      updatedEntity.UserID,
+		CreatedAt:   updatedEntity.CreatedAt,
+		UpdatedAt:   updatedEntity.UpdatedAt,
+	}
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(respDTO)
 }
 
 func (cc *CategoryController) Delete(w http.ResponseWriter, r *http.Request) {
@@ -95,4 +159,12 @@ func (cc *CategoryController) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// getString safely dereferences a *string, returning an empty string if nil.
+func getString(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }

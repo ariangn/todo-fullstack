@@ -38,7 +38,6 @@ func NewTodo(
 	categoryID *string,
 	tagIDs []string,
 ) (*Todo, error) {
-	fmt.Println("ENTITY DEBUG: NewTodo called with tagIDs =", tagIDs)
 	if title == "" {
 		return nil, errors.New("title cannot be empty")
 	}

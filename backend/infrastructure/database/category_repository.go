@@ -93,6 +93,7 @@ func (r *categoryRepository) Update(ctx context.Context, c *entity.Category) (*e
 	if c.ID == "" {
 		return nil, errors.New("category ID is required")
 	}
+
 	updates := map[string]interface{}{}
 	if c.Name != "" {
 		updates["name"] = c.Name
@@ -104,22 +105,18 @@ func (r *categoryRepository) Update(ctx context.Context, c *entity.Category) (*e
 		updates["description"] = c.Description
 	}
 
+	// Perform the update, but ignore the raw JSON payload
 	builder := r.supabase.DB.
 		From("categories").
-		Update(updates, "*", "").
-		Eq("id", c.ID).
-		Single()
+		Update(updates, "", "").
+		Eq("id", c.ID)
 
-	raw, _, err := builder.Execute()
-	if err != nil {
+	if _, _, err := builder.Execute(); err != nil {
 		return nil, err
 	}
 
-	var m model.CategoryModel
-	if err := json.Unmarshal(raw, &m); err != nil {
-		return nil, err
-	}
-	return model.ToDomainCategory(&m), nil
+	// Now re-fetch the row so we get a proper JSON object
+	return r.FindByID(ctx, c.ID)
 }
 
 func (r *categoryRepository) Delete(ctx context.Context, id string) error {

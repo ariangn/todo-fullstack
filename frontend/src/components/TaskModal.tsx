@@ -19,8 +19,7 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
+import { Calendar24 } from "@/components/ui/calendar-24";
 import { Badge } from "@/components/ui/badge";
 import { XIcon } from "lucide-react";
 import type { Todo } from "../services/todoService";
@@ -197,32 +196,35 @@ export default function TaskModal({
             />
           </div>
           {/* Due Date */}
-          <div className="grid grid-cols-3 items-center gap-4">
-            <Label>Due Date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-[200px] justify-start text-left font-normal"
-                >
-                  {dueDate
-                    ? dueDate.toLocaleDateString(undefined, {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })
-                    : "Select date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={dueDate}
-                  onSelect={setDueDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+          <div className="grid grid-cols-3 items-start gap-4">
+            <Label>Due Date & Time</Label>
+            <div className="col-span-2">
+              <Calendar24
+                date={dueDate}
+                onDateChange={(d) => {
+                  // keep the existing time if any
+                  const newDate = d
+                    ? new Date(
+                        d.getFullYear(),
+                        d.getMonth(),
+                        d.getDate(),
+                        dueDate?.getHours() ?? 0,
+                        dueDate?.getMinutes() ?? 0,
+                        dueDate?.getSeconds() ?? 0
+                      )
+                    : undefined;
+                  setDueDate(newDate);
+                }}
+                time={dueDate}
+                onTimeChange={(t) => {
+                  if (!dueDate) return;
+                  const [h, m, s] = t.split(":").map(Number);
+                  const newDate = new Date(dueDate);
+                  newDate.setHours(h, m, s);
+                  setDueDate(newDate);
+                }}
+              />
+            </div>
           </div>
           {/* Category */}
           <div className="grid grid-cols-3 items-center gap-4">
@@ -234,7 +236,7 @@ export default function TaskModal({
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
-              <SelectContent className="">
+              <SelectContent className="bg-white">
                 <SelectItem value="none">None</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>

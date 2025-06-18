@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -112,6 +113,7 @@ func (r *todoRepository) Update(ctx context.Context, t *entity.Todo) (*entity.To
 		return nil, errors.New("todo ID is required")
 	}
 
+	// 1) Update core todo fields
 	updates := map[string]interface{}{}
 	if t.Title != "" {
 		updates["title"] = t.Title
@@ -131,43 +133,87 @@ func (r *todoRepository) Update(ctx context.Context, t *entity.Todo) (*entity.To
 	if t.CategoryID != nil {
 		updates["category_id"] = t.CategoryID
 	}
-
-	// Update todo
-	_, _, err := r.supabase.DB.
-		From("todos").
-		Update(updates, "", "").
-		Eq("id", t.ID).
-		Execute()
-	if err != nil {
-		return nil, err
-	}
-
-	// Remove existing tag relations
-	_, _, err = r.supabase.DB.
-		From("todo_tags").
-		Delete("", "").
-		Eq("todo_id", t.ID).
-		Execute()
-	if err != nil {
-		return nil, err
-	}
-
-	// Insert updated tag relations
-	for _, tagID := range t.TagIDs {
-		join := map[string]interface{}{
-			"todo_id": t.ID,
-			"tag_id":  tagID,
-		}
-		_, _, err := r.supabase.DB.
-			From("todo_tags").
-			Insert(join, false, "", "", "").
-			Execute()
-		if err != nil {
+	if len(updates) > 0 {
+		if _, _, err := r.supabase.DB.
+			From("todos").
+			Update(updates, "", "").
+			Eq("id", t.ID).
+			Execute(); err != nil {
 			return nil, err
 		}
 	}
 
-	// Fetch updated todo
+	// 2) Only touch tags if caller provided TagIDs
+	if t.TagIDs != nil {
+		// a) sanitize new list (drop empty)
+		newIDs := make(map[string]struct{}, len(t.TagIDs))
+		for _, tid := range t.TagIDs {
+			if s := strings.TrimSpace(tid); s != "" {
+				newIDs[s] = struct{}{}
+			}
+		}
+
+		// b) fetch existing tag_ids for this todo
+		raw, _, err := r.supabase.DB.
+			From("todo_tags").
+			Select("tag_id", "", false).
+			Eq("todo_id", t.ID).
+			Execute()
+		if err != nil {
+			return nil, err
+		}
+		var rows []struct {
+			TagID string `json:"tag_id"`
+		}
+		if err := json.Unmarshal(raw, &rows); err != nil {
+			return nil, err
+		}
+		oldIDs := make(map[string]struct{}, len(rows))
+		for _, r := range rows {
+			oldIDs[r.TagID] = struct{}{}
+		}
+
+		// c) compute diffs
+		toAdd := []map[string]interface{}{}
+		for id := range newIDs {
+			if _, seen := oldIDs[id]; !seen {
+				toAdd = append(toAdd, map[string]interface{}{
+					"todo_id": t.ID,
+					"tag_id":  id,
+				})
+			}
+		}
+		toRemove := []string{}
+		for id := range oldIDs {
+			if _, keep := newIDs[id]; !keep {
+				toRemove = append(toRemove, id)
+			}
+		}
+
+		// d) batch delete removed tags
+		if len(toRemove) > 0 {
+			if _, _, err := r.supabase.DB.
+				From("todo_tags").
+				Delete("", "").
+				Eq("todo_id", t.ID).
+				In("tag_id", toRemove).
+				Execute(); err != nil {
+				return nil, err
+			}
+		}
+
+		// e) batch insert added tags
+		if len(toAdd) > 0 {
+			if _, _, err := r.supabase.DB.
+				From("todo_tags").
+				Insert(toAdd, false, "", "", "").
+				Execute(); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	// 3) Return the fresh todo
 	return r.FindByID(ctx, t.ID)
 }
 

@@ -3,7 +3,6 @@ package handler
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 
@@ -45,7 +44,6 @@ func (tc *TagController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer r.Body.Close()
-	fmt.Println("RAW BODY:", string(bodyBytes))
 
 	// rewind for decoding
 	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
@@ -55,7 +53,6 @@ func (tc *TagController) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid request payload: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println("Decoded DTO:", dto)
 
 	tagEntity, err := tc.createUC.Execute(r.Context(), userID, dto.Name)
 	if err != nil {

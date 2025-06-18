@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"bytes"
-	"fmt"
 	"io"
 
 	"github.com/ariangn/todo-fullstack/backend/application/user"
@@ -35,7 +34,6 @@ func NewUserController(
 
 func (uc *UserController) Register(w http.ResponseWriter, r *http.Request) {
 	bodyBytes, _ := io.ReadAll(r.Body)
-	fmt.Println("RAW BODY:", string(bodyBytes))
 	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // Re-use body
 	var dto request.CreateUserDTO
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {

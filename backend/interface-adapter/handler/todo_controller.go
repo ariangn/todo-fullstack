@@ -58,7 +58,6 @@ func (tc *TodoController) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	bodyBytes, _ := io.ReadAll(r.Body)
-	// fmt.Println("RAW TODO BODY:", string(bodyBytes))
 	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // rewind for decoding
 
 	var dto request.CreateTodoDTO
@@ -292,6 +291,7 @@ func (tc *TodoController) ToggleStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newStatus := entity.Status(body.Status)
+
 	updated, err := tc.toggleStatus.Execute(r.Context(), id, newStatus)
 	if err != nil {
 		log.Printf("Failed to toggle status: %v", err)

@@ -3,6 +3,7 @@ export type User = { id: string; email: string; name?: string; avatarUrl?: strin
 const API = import.meta.env.VITE_API_URL as string;
 
 export async function login(email: string, password: string): Promise<User> {
+  console.log("→ POST", `${API}/users/login`);
   const res = await fetch(`${API}/users/login`, {
     method: "POST",
     credentials: "include", // include HTTP-only cookie support

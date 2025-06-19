@@ -12,8 +12,10 @@ export type Todo = {
   updatedAt: string;
 };
 
+const API = import.meta.env.VITE_API_URL as string;
+
 export async function fetchAllTodos(): Promise<Todo[]> {
-  const res = await fetch("/api/todos", { credentials: "include" });
+  const res = await fetch(`${API}/todos`, { credentials: "include" });
   if (!res.ok) throw new Error("Failed to fetch todos");
   return (await res.json()) as Todo[];
 }
@@ -26,7 +28,7 @@ export async function createTodo(data: {
   categoryId?: string;
   tagIds: string[];
 }): Promise<Todo> {
-  const res = await fetch("/api/todos", {
+  const res = await fetch(`${API}/todos`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -47,7 +49,7 @@ export async function updateTodo(
     tagIds: string[];
   }>
 ): Promise<Todo> {
-  const res = await fetch(`/api/todos/${id}`, {
+  const res = await fetch(`${API}/todos/${id}`, {
     method: "PUT",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -58,7 +60,7 @@ export async function updateTodo(
 }
 
 export async function updateTodoStatus(todoId: string, newStatus: "TODO" | "IN_PROGRESS" | "COMPLETED") {
-  const res = await fetch(`/api/todos/${todoId}/status`, {
+  const res = await fetch(`${API}/todos/${todoId}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -76,7 +78,7 @@ export async function updateTodoStatus(todoId: string, newStatus: "TODO" | "IN_P
 }
 
 export async function deleteTodo(id: string): Promise<void> {
-  const res = await fetch(`/api/todos/${id}`, {
+  const res = await fetch(`${API}/todos/${id}`, {
     method: "DELETE",
     credentials: "include",
   });
@@ -84,7 +86,7 @@ export async function deleteTodo(id: string): Promise<void> {
 }
 
 export async function duplicateTodo(id: string): Promise<Todo> {
-  const res = await fetch(`/api/todos/${id}/duplicate`, {
+  const res = await fetch(`${API}/todos/${id}/duplicate`, {
     method: "POST",
     credentials: "include",
   });

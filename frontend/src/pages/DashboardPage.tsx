@@ -29,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { PlusIcon } from "lucide-react";
 
 export default function DashboardPage({ user, onLogout }: { user: User; onLogout: () => void }) {
+  const API = import.meta.env.VITE_API_URL as string;
   const [todos, setTodos] = useState<Todo[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
@@ -239,7 +240,7 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
           allTags={tags}
           createTag={createTag}
           onSave={async (data) => {
-            await fetch("/api/todos", {
+            await fetch(`${API}/todos`, {
               method: "POST",
               credentials: "include",
               headers: { "Content-Type": "application/json" },
@@ -262,7 +263,7 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
           allTags={tags}
           createTag={createTag}
           onSave={async (data) => {
-            await fetch(`/api/todos/${modal.todo.id}`, {
+            await fetch(`${API}/todos/${modal.todo.id}`, {
               method: "PUT",
               credentials: "include",
               headers: { "Content-Type": "application/json" },

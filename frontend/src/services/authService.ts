@@ -1,7 +1,9 @@
 export type User = { id: string; email: string; name?: string; avatarUrl?: string };
 
+const API = import.meta.env.VITE_API_URL as string;
+
 export async function login(email: string, password: string): Promise<User> {
-  const res = await fetch("/api/users/login", {
+  const res = await fetch(`${API}/users/login`, {
     method: "POST",
     credentials: "include", // include HTTP-only cookie support
     headers: {
@@ -24,7 +26,7 @@ export async function signup(
   timezone?: string,
   avatarUrl?: string
 ): Promise<User> {
-  const res = await fetch("/api/users/register", {
+  const res = await fetch(`${API}/users/register`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -41,7 +43,7 @@ export async function signup(
 }
 
 export async function fetchMe(): Promise<User> {
-  const res = await fetch("/api/auth/me", {
+  const res = await fetch(`${API}/auth/me`, {
     method: "GET",
     credentials: "include",
   });
@@ -53,7 +55,7 @@ export async function fetchMe(): Promise<User> {
 
 export async function logout(): Promise<void> {
   // Backend should clear cookie on this endpoint
-  const res = await fetch("/api/users/logout", {
+  const res = await fetch(`${API}/users/logout`, {
     method: "POST",
     credentials: "include",
   });
@@ -63,7 +65,7 @@ export async function logout(): Promise<void> {
 }
 
 export async function getUserFromCookie(): Promise<User | null> {
-  const res = await fetch("/api/auth/me", { credentials: "include" });
+  const res = await fetch(`${API}/auth/me`, { credentials: "include" });
   if (!res.ok) return null;
   return (await res.json()) as User;
 }

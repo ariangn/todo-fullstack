@@ -3,14 +3,16 @@ export type Tag = {
   name: string;
 };
 
+const API = import.meta.env.VITE_API_URL as string;
+
 export async function fetchTags(): Promise<Tag[]> {
-  const res = await fetch("/api/tags", { credentials: "include" });
+  const res = await fetch(`${API}/tags`, { credentials: "include" });
   if (!res.ok) throw new Error("Failed to fetch tags");
   return (await res.json()) as Tag[];
 }
 
 export async function createTag(name: string): Promise<Tag> {
-  const res = await fetch("/api/tags", {
+  const res = await fetch(`${API}/tags`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
@@ -27,7 +29,7 @@ export async function createTag(name: string): Promise<Tag> {
 }
 
 export async function deleteTag(id: string): Promise<void> {
-  const res = await fetch(`/api/tags/${id}`, {
+  const res = await fetch(`${API}/tags/${id}`, {
     method: "DELETE",
     credentials: "include",
   });

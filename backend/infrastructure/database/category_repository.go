@@ -35,16 +35,12 @@ func (r *categoryRepository) Create(ctx context.Context, c *entity.Category) (*e
 		Insert(toInsert, false, "", "*", "").
 		Single()
 
-	raw, _, err := builder.Execute()
+	_, _, err := builder.Execute()
 	if err != nil {
 		return nil, err
 	}
 
-	var m model.CategoryModel
-	if err := json.Unmarshal(raw, &m); err != nil {
-		return nil, err
-	}
-	return model.ToDomainCategory(&m), nil
+	return r.FindByID(ctx, c.ID)
 }
 
 func (r *categoryRepository) FindByID(ctx context.Context, id string) (*entity.Category, error) {

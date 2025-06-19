@@ -37,8 +37,8 @@ export default function SortFilterBar({
 
   // Fetch once
   useEffect(() => {
-    fetchCategories().then(setCategories);
-    fetchTags().then(setTags);
+    fetchCategories().then((cats) => setCategories(cats || []));
+    fetchTags().then((t) => setTags(t || []));
   }, []);
 
   // Build a map: tagName → [tagId, ...]
@@ -81,9 +81,8 @@ export default function SortFilterBar({
     <div className="flex items-center space-x-4 mb-4">
       {/* Sort dropdown */}
       <Select onValueChange={(v) => onSortChange(v as SortKey)}>
-        <SelectTrigger className="w-44">
+        <SelectTrigger className="w-44 hover:bg-gray-300">
           <SelectValue placeholder="Sort by" />
-          <ChevronDownIcon className="ml-auto h-4 w-4" />
         </SelectTrigger>
         <SelectContent className="bg-white">
           <SelectItem value="dueDate">Due Date</SelectItem>
@@ -102,24 +101,31 @@ export default function SortFilterBar({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64 bg-white">
+
           {/* Categories */}
           <DropdownMenuLabel className="font-medium">Categories</DropdownMenuLabel>
           <DropdownMenuGroup>
-            {categories.map((cat) => (
-              <DropdownMenuItem
-                key={cat.id}
-                className="flex items-center space-x-2"
-                onClick={() => toggleCategory(cat.id)}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedCats.includes(cat.id)}
-                  readOnly
-                  className="form-checkbox h-4 w-4 text-primary"
-                />
-                <span>{cat.name}</span>
+            {categories.length > 0 ? (
+              categories.map((cat) => (
+                <DropdownMenuItem
+                  key={cat.id}
+                  className="flex items-center space-x-2"
+                  onClick={() => toggleCategory(cat.id)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedCats.includes(cat.id)}
+                    readOnly
+                    className="form-checkbox h-4 w-4 text-primary"
+                  />
+                  <span>{cat.name}</span>
+                </DropdownMenuItem>
+              ))
+            ) : (
+              <DropdownMenuItem disabled className="text-sm italic text-gray-500">
+                No categories created yet
               </DropdownMenuItem>
-            ))}
+            )}
           </DropdownMenuGroup>
 
           <DropdownMenuSeparator />
@@ -127,24 +133,32 @@ export default function SortFilterBar({
           {/* Tags (deduped by name) */}
           <DropdownMenuLabel className="font-medium">Tags</DropdownMenuLabel>
           <DropdownMenuGroup>
-            {uniqueNames.map((name) => (
-              <DropdownMenuItem
-                key={name}
-                className="flex items-center space-x-2"
-                onClick={() => toggleTagName(name)}
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedTagNames.includes(name)}
-                  readOnly
-                  className="form-checkbox h-4 w-4 text-primary"
-                />
-                <span>{name}</span>
+            {uniqueNames.length > 0 ? (
+              uniqueNames.map((name) => (
+                <DropdownMenuItem
+                  key={name}
+                  className="flex items-center space-x-2"
+                  onClick={() => toggleTagName(name)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTagNames.includes(name)}
+                    readOnly
+                    className="form-checkbox h-4 w-4 text-primary"
+                  />
+                  <span>{name}</span>
+                </DropdownMenuItem>
+              ))
+            ) : (
+              <DropdownMenuItem disabled className="text-sm italic text-gray-500">
+                No tags created yet
               </DropdownMenuItem>
-            ))}
+            )}
           </DropdownMenuGroup>
+
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
   );
+
 }

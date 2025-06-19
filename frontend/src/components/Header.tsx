@@ -14,7 +14,7 @@ export default function Header({
     <header className="flex items-center justify-between px-6 py-4 bg-white shadow-sm">
       <Link to="/dashboard" className="flex items-center space-x-2">
         <img src="/logo.png" alt="Logo" className="h-8 w-8" />
-        <span className="text-xl font-semibold text-gray-800">conquest</span>
+        <span className="text-xl font-semibold font-header text-gray-800">CONQUEST</span>
       </Link>
 
       <div className="flex items-center space-x-4">

@@ -246,7 +246,7 @@ export default function TaskModal({
               </SelectTrigger>
               <SelectContent className="bg-white">
                 <SelectItem value="none">None</SelectItem>
-                {categories.map((cat) => (
+                {(categories ?? []).map((cat) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
                   </SelectItem>

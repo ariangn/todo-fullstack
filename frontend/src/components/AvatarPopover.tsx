@@ -35,7 +35,7 @@ export default function AvatarPopover({
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-start space-x-2"
+          className="w-full justify-start space-x-2 hover:bg-gray-200"
           onClick={onLogout}
         >
           <LogOutIcon className="h-4 w-4" />

@@ -21,7 +21,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     setError(null);
     setLoading(true);
     try {
-      onLogin(email, password);
+      await onLogin(email, password);
       navigate("/dashboard");
     } catch (err) {
       // err could be Error or something else
@@ -66,7 +66,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             </div>
             {error && <p className="text-red-500 text-sm">{error}</p>}
             <CardFooter className="flex justify-between items-center">
-              <Button type="submit" disabled={loading}>
+              <Button variant="outline" type="submit" disabled={loading}>
                 {loading ? "Logging in..." : "Log In"}
               </Button>
               <Link to="/signup" className="text-sm text-primary">Sign Up</Link>

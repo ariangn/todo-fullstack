@@ -9,6 +9,9 @@ export default {
           dark: "#B7791F",
         },
       },
+      fontFamily: {
+        header: ["joystix", "sans-serif"],
+      },
     },
   },
   plugins: [],

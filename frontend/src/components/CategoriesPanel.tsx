@@ -29,7 +29,7 @@ export default function CategoriesPanel({
 }: CategoriesPanelProps) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [newName, setNewName] = useState<string>("");
-  const [newColor, setNewColor] = useState<string>("#D69E2E");
+  const [newColor, setNewColor] = useState<string>("#D8D8F6");
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +44,7 @@ export default function CategoriesPanel({
     try {
       await createCategory(newName.trim(), newColor);
       setNewName("");
-      setNewColor("#D69E2E");
+      setNewColor("#D8D8F6");
       refreshCategories();
       // Close popover by blurring the trigger button
       document.getElementById("add-cat-trigger")?.blur();
@@ -90,7 +90,7 @@ export default function CategoriesPanel({
           ))}
         </ul>
 
-        <div className="flex justify-center">
+        <div className="flex justify-center w-full">
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
             <PopoverTrigger asChild>
               <Button
@@ -102,7 +102,7 @@ export default function CategoriesPanel({
               </Button>
             </PopoverTrigger>
 
-            <PopoverContent className="w-80 max-h-[70vh] overflow-y-auto p-4 bg-white">
+            <PopoverContent sideOffset={30} className="w-full max-w-sm max-h-[70vh] left-0 mx-4 content-start overflow-y-auto p-4 bg-white">
               <div className="space-y-4">
                 <h4 className="text-lg font-medium">New Category</h4>
 
@@ -113,7 +113,7 @@ export default function CategoriesPanel({
                       id="cat-name"
                       value={newName}
                       onChange={(e) => setNewName(e.target.value)}
-                      placeholder="Enter category name"
+                      placeholder="E.g. work, fun"
                       className="col-span-2 h-8"
                     />
                   </div>

@@ -37,7 +37,7 @@ export async function signup(
     throw new Error(`Signup failed: ${text}`);
   }
   // Backend registers user, might return user object
-  return fetchMe();
+  return (await res.json()) as User;
 }
 
 export async function fetchMe(): Promise<User> {

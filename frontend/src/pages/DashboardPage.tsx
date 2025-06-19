@@ -47,11 +47,11 @@ export default function DashboardPage({ user, onLogout }: { user: User; onLogout
   const [activeTodo, setActiveTodo] = useState<Todo | null>(null);
 
   const loadAllData = useCallback(async () => {
-    let allTodos = await fetchAllTodos();
+    let allTodos = (await fetchAllTodos()) || [];
     if (!Array.isArray(allTodos)) allTodos = [];
 
-    const allCategories = await fetchCategories();
-    const allTags = await fetchTags();
+    const allCategories = (await fetchCategories()) || [];
+    const allTags = (await fetchTags()) || [];
 
     // enrich todos with category
     let enriched = allTodos.map((todo) => {

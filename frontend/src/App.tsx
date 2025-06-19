@@ -63,13 +63,7 @@ export default function App() {
     timezone: string,
     avatarUrl?: string
   ) {
-    const signedUp = await signupService(email, password, name, timezone, avatarUrl);
-    setUser({
-      id: signedUp.id,
-      email: signedUp.email!,
-      name: signedUp.name || "",
-      avatarUrl: signedUp.avatarUrl,
-    });
+    await signupService(email, password, name, timezone, avatarUrl);
   }
 
   async function handleLogout() {

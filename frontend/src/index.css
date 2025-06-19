@@ -2,11 +2,12 @@
 
 @import "tailwindcss";
 
-/* test only: background “slate-50” and text “gray-900” */
-html {
-  @apply bg-slate-50 text-gray-900;
+@font-face {
+  font-family: "joystix";
+  src: url("/joystix.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
 }
-
 
 /* 
 @import "tw-animate-css";

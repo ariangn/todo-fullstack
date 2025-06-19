@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"os"
 
 	"bytes"
 	"io"
@@ -86,8 +85,8 @@ func (uc *UserController) Login(w http.ResponseWriter, r *http.Request) {
 		Value:    token,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   os.Getenv("ENV") == "production", // HTTPS only in prod
-		SameSite: http.SameSiteLaxMode,
+		Secure:   true,
+		SameSite: http.SameSiteNoneMode,
 		MaxAge:   60 * 60 * 24, // 1 day
 	})
 
@@ -103,8 +102,8 @@ func (uc *UserController) Logout(w http.ResponseWriter, r *http.Request) {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   os.Getenv("ENV") == "production", // HTTPS only in prod
-		SameSite: http.SameSiteLaxMode,
+		Secure:   true, // HTTPS only in prod
+		SameSite: http.SameSiteNoneMode,
 		MaxAge:   -1,
 	})
 	w.WriteHeader(http.StatusOK)
